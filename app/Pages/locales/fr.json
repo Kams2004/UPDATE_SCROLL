@@ -1,0 +1,174 @@
+{
+  "readChapters": "Lire les chapitres",
+  "homepage": {
+    "to_start": "Pour",
+    "the_kijins": "Commencer",
+    "experience": "L'expérience KIJINS"
+  },
+  "menu": {
+    "logout": "déconnect",
+    "user": "Utilisateur",
+    "login": "connection",
+    "actors": "Acteur",
+    "map": "Carte",
+    "gallery": "Galerie",
+    "dico": "Dico"
+  },
+  "loading": {
+    "preparingExperience": "Préparation de votre expérience de lecture...",
+    "almostReady": "Votre chapitre est presque prêt...",
+    "makingAdjustments": "Finalisation des ajustements...",
+    "gettingReady": "Préparation de votre chapitre...",
+    "almostThere": "Presque terminé..."
+  },
+  "errors": {
+    "authRequired": "Authentification requise",
+    "unableToPrepareLong": "Impossible de préparer le chapitre",
+    "loadFailed": "Échec du chargement du chapitre:"
+  },
+  "forgot_password": {
+    "title": "Mot de passe oublié",
+    "subtitle": "Veuillez saisir votre adresse e-mail",
+    "email_placeholder": "Adresse e-mail",
+    "email_required": "Veuillez saisir votre adresse e-mail.",
+    "invalid_email": "Veuillez saisir une adresse e-mail valide.",
+    "link_error": "Impossible d'ouvrir le lien de réinitialisation. Veuillez vérifier votre e-mail manuellement.",
+    "success_message": "Lien de réinitialisation envoyé avec succès. Veuillez vérifier votre e-mail.",
+    "error_message": "Échec de l'envoi du lien de réinitialisation. Veuillez réessayer.",
+    "sending": "Envoi...",
+    "submit": "Envoyer"
+  },
+  "message_modal": {
+    "dismiss": "Fermer"
+  },
+  "common": {
+    "close": "Fermer",
+    "submit": "Soumettre",
+    "cancel": "Annuler",
+    "loading": "Chargement...",
+    "error": "Une erreur s'est produite."
+  },
+  "otp": {
+    "title": "Vérifier l'OTP",
+    "subtitle": "Entrez le code à 6 chiffres envoyé à {{email}}",
+    "no_email": "Aucun e-mail fourni",
+    "error_title": "Erreur",
+    "no_email_error": "L'e-mail est requis pour la vérification de l'OTP",
+    "error_incomplete": "Veuillez entrer un OTP complet à 6 chiffres",
+    "verify_button": "Vérifier",
+    "resend_prompt": "Vous n'avez pas reçu le code ?",
+    "resend_button": "Renvoyer l'OTP",
+    "resend_timer": "Renvoyer dans",
+    "verification_success": "OTP vérifié avec succès",
+    "verification_error": "OTP invalide. Veuillez réessayer.",
+    "resend_success": "Nouvel OTP envoyé avec succès",
+    "resend_error": "Échec de l'envoi du nouvel OTP",
+    "network_error": "Erreur réseau. Veuillez vérifier votre connexion.",
+    "request_error": "Une erreur est survenue. Veuillez réessayer."
+  },
+  "cart": {
+    "title": "Votre Panier",
+    "empty": "Votre panier est vide.",
+    "your_cart": "Votre Panier",
+    "payment_method": "Méthode de paiement",
+    "total": "Total",
+    "processing": "Traitement en cours...",
+    "proceed_to_checkout": "Passer à la caisse",
+    "add_to_basket_failed": "Impossible d'ajouter le chapitre au panier. Veuillez réessayer.",
+    "add_to_basket_error": "Erreur. Impossible d'ajouter le chapitre au panier.",
+    "login_required_proceed": "Erreur. Vous devez être connecté pour continuer.",
+    "payment_method_required": "Erreur. Veuillez sélectionner une méthode de paiement.",
+    "clear": "Vider le panier",
+    "chapter_not_available": "Chapitre non disponible. Ce chapitre sera bientôt disponible !",
+    "payment_default_error": "Impossible de traiter le paiement. Veuillez réessayer.",
+    "payment_error": "Erreur. Impossible de traiter le paiement : {{message}}",
+    "total_price": "Prix total :",
+    "mark_view_error": "Erreur. Impossible de marquer le chapitre comme vu.",
+    "login_view_required": "Connexion requise. Veuillez vous connecter pour voir les chapitres.",
+    "toggle_like_error": "Erreur. Impossible de modifier l'état du like pour le chapitre.",
+    "buy": "Acheter",
+    "remove_default_error": "Impossible de supprimer le chapitre du panier.",
+    "remove_error": "Erreur. Impossible de supprimer le chapitre du panier : {{message}}",
+    "login_like_required": "Connexion requise. Veuillez vous connecter pour aimer des chapitres.",
+    "payment_cancelled": "Paiement annulé. Votre transaction a été annulée. Vous pouvez réessayer.",
+    "purchase_success": "Achat réussi ! Vous pouvez maintenant accéder aux chapitres achetés.",
+    "verification_error": "Erreur de vérification. Impossible de vérifier les achats. Veuillez vérifier votre compte.",
+    "remove": "Supprimer",
+    "session_expired": "Session expirée. Veuillez vous reconnecter.",
+    "payment_methods": "Méthode de paiement disponible",
+    "login_required": "Veuillez vous connecter pour ajouter des articles à votre panier",
+    "error_message": "Une erreur s'est produite lors de l'ajout au panier. Veuillez réessayer."
+  },
+  "chapter": {
+    "tome": "Tome",
+    "default_tome": "Tome 1",
+    "read": "Lire",
+    "buy": "Acheter",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "purchase": "Acheter"
+  },
+  "general": {
+    "close": "Fermer"
+  },
+  "network_error": {
+    "title": "Erreur Réseau",
+    "default_message": "Un problème est survenu. Veuillez vérifier votre connexion internet.",
+    "retry": "Réessayer"
+  },
+  "login": {
+    "title": "Utilisateur",
+    "titles": "Connexion",
+    "email_placeholder": "E-mail",
+    "password_placeholder": "Mot de passe",
+    "forgot_password": "Mot de passe oublié ?",
+    "login_button": "Connexion",
+    "error_message": "Échec de la connexion. Veuillez réessayer.",
+    "signup_cta": "S'inscrire",
+    "connect_with": "Connectez-vous avec",
+    "ou": "Ou",
+    "email_required": "Veuillez saisir votre adresse e-mail.",
+    "invalid_email": "Veuillez saisir une adresse e-mail valide.",
+    "password_required": "Veuillez saisir votre mot de passe.",
+    "login_error": "Échec de la connexion. Veuillez réessayer.",
+    "credentials_error": "E-mail ou mot de passe invalide.",
+    "logging_in": "Connexion...",
+    "password_show": "Afficher",
+    "password_hide": "Masquer",
+    "google_signin": "Connectez-vous avec Google",
+    "sign_up": "Nouveau sur Scrollbox ? ",
+        "sign_up_link": "Inscrivez-vous maintenant"
+  },
+  "signup": {
+    "title": "S'inscrire",
+    "name_placeholder": "Nom",
+    "email_placeholder": "E-mail",
+    "phone_placeholder": "Numéro de téléphone",
+    "password_placeholder": "Mot de passe",
+    "texts": "J'accepte les ",
+    "terms": "termes et conditions",
+    "signup_button": "S'inscrire",
+    "texts_login":"Vous avez déjà un compte ? ",
+    "login_link": "Connexion",
+    "error_name_required": "Le nom est requis",
+    "error_email_required": "L'e-mail est requis",
+    "error_email_invalid": "Veuillez entrer une adresse e-mail valide",
+    "error_password_required": "Le mot de passe est requis",
+    "error_password_length": "Le mot de passe doit comporter plus de 7 caractères",
+    "error_terms": "Vous devez accepter les termes et conditions",
+    "signup_success": "Compte créé avec succès. Veuillez vous connecter.",
+    "signup_error": "Échec de la création du compte. Veuillez réessayer."
+  },
+  "comments": {
+    "title": "Commentaires",
+    "no_comments": "Pas encore de commentaires. Soyez le premier à commenter !",
+    "reply": "Répondre",
+    "cancel_reply": "Annuler",
+    "write_comment_placeholder": "Écrivez un commentaire...",
+    "reply_to_comment": "Répondre à ce commentaire..."
+  },
+  "actors": {
+    "title": "Acteurs",
+    "description": "Ceci est la description de {name}."
+  }
+}

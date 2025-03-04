@@ -1,0 +1,173 @@
+{
+  "readChapters": "Read chapters",
+  "homepage": {
+    "to_start": "To start",
+    "the_kijins": "The KIJINS",
+    "experience": "Experience"
+  },
+  "menu": {
+    "logout": "Log out",
+    "user": "User",
+    "login": "Log In",
+    "actors": "Actors",
+    "map": "Map",
+    "gallery": "Gallery",
+    "dico": "Dico"
+  },
+  "loading": {
+    "preparingExperience": "Preparing your reading experience...",
+    "almostReady": "Your chapter is almost ready...",
+    "makingAdjustments": "Making final adjustments...",
+    "gettingReady": "Getting your chapter ready...",
+    "almostThere": "Almost there..."
+  },
+  "errors": {
+    "authRequired": "Authentication required",
+    "unableToPrepareLong": "Unable to prepare chapter",
+    "loadFailed": "Chapter load failed:"
+  },
+  "common": {
+    "close": "Close",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "loading": "Loading...",
+    "error": "An error occurred."
+  },
+  "cart": {
+    "title": "Your Cart",
+    "empty": "Your cart is empty.",
+    "your_cart": "Your Cart",
+    "payment_method": "Payment Method",
+    "total": "Total",
+    "processing": "Processing...",
+    "proceed_to_checkout": "Proceed to Checkout",
+    "clear": "Clear Cart",
+    "total_price": "Total Price:",
+    "buy": "Buy",
+    "login_view_required": "Login required. Please log in to view chapters.",
+    "mark_view_error": "Error. Unable to mark the chapter as viewed.",
+    "remove_error": "Error. Unable to remove chapter from cart: {{message}}",
+    "remove_default_error": "Unable to remove chapter from cart.",
+    "payment_method_required": "Error. Please select a payment method.",
+    "login_required_proceed": "Error. You must be logged in to proceed.",
+    "payment_error": "Error. Unable to process payment: {{message}}",
+    "payment_default_error": "Unable to process payment. Please try again.",
+    "chapter_not_available": "Chapter not available. This chapter will be available soon!",
+    "add_to_basket_error": "Error. Failed to add the chapter to the basket.",
+    "add_to_basket_failed": "Unable to add chapter to the basket. Please try again.",
+    "toggle_like_error": "Error. Unable to toggle like for the chapter.",
+    "login_like_required": "Login required. Please log in to like chapters.",
+    "payment_cancelled": "Payment cancelled. Your transaction was cancelled. You can try again.",
+    "session_expired": "Session expired. Please log in again.",
+    "purchase_success": "Purchase successful! You can now access the purchased chapters.",
+    "verification_error": "Verification error. Unable to verify purchases. Please check your account.",
+    "login_required": "Please log in to add items to your basket",
+    "error_message": "An error occurred while adding to cart. Please try again.",
+    "remove": "Remove",
+    "payment_methods": "Payment method available"
+  },
+  "chapter": {
+    "tome": "Tome",
+    "default_tome": "Tome 1",
+    "read": "Read",
+    "buy": "Buy",
+    "previous": "Previous",
+    "next": "Next",
+    "purchase": "Purchase"
+  },
+  "general": {
+    "close": "Close"
+  },
+  "otp": {
+    "title": "Verify OTP",
+    "subtitle": "Enter 6-digit code sent to {{email}}",
+    "no_email": "No email provided",
+    "error_title": "Error",
+    "no_email_error": "Email is required for OTP verification",
+    "error_incomplete": "Please enter a complete 6-digit OTP",
+    "verify_button": "Verify",
+    "resend_prompt": "Didn't receive the code?",
+    "resend_button": "Resend OTP",
+    "resend_timer": "Resend in",
+    "verification_success": "OTP verified successfully",
+    "verification_error": "Invalid OTP. Please try again.",
+    "resend_success": "New OTP sent successfully",
+    "resend_error": "Failed to send new OTP",
+    "network_error": "Network error. Please check your connection.",
+    "request_error": "An error occurred. Please try again."
+  },
+  "network_error": {
+    "title": "Network Error",
+    "default_message": "Something went wrong. Please check your internet connection.",
+    "retry": "Retry"
+  },
+  "login": {
+    "title": "User",
+    "titles": "Login",
+    "email_required": "Please enter your email address.",
+    "invalid_email": "Please enter a valid email address.",
+    "password_required": "Please enter your password.",
+    "login_error": "Login failed. Please try again.",
+    "credentials_error": "Invalid email or password.",
+    "logging_in": "Logging in...",
+    "password_show": "Show",
+    "password_hide": "Hide",
+    "google_signin": "Sign in with Google",
+    "sign_up": "New to Scrollbox ? ",
+    "sign_up_link": "Sign Up now",
+    "email_placeholder": "E-mail",
+    "password_placeholder": "Password",
+    "forgot_password": "Forgot your password?",
+    "login_button": "Login",
+    "error_message": "Login failed. Please try again.",
+    "signup_cta": "Sign Up",
+    "connect_with": "Connect with",
+    "ou": "Or"
+  },
+  "signup": {
+    "title": "Sign Up",
+    "name_placeholder": "Name",
+    "email_placeholder": "E-mail",
+    "password_placeholder": "Password",
+    "texts": "By continuing, you accept the ",
+    "terms": "Terms and Conditions.",
+    "signup_button": "Sign Up",
+    "texts_login": "Already have an account? ",
+    "login_link": "Login",
+    "error_name_required": "Name is required",
+    "error_email_required": "Email is required",
+    "error_email_invalid": "Please enter a valid email address",
+    "error_password_required": "Password is required",
+    "error_password_length": "Password must be more than 7 characters",
+    "error_terms": "Please accept the terms to proceed",
+    "signup_success": "Account created successfully. Please log in.",
+    "signup_error": "Failed to create account. Please try again."
+  },
+  "comments": {
+    "title": "Comments",
+    "no_comments": "No comments yet. Be the first to comment!",
+    "reply": "Reply",
+    "cancel_reply": "Cancel",
+    "write_comment_placeholder": "Write a comment...",
+    "reply_to_comment": "Reply to this comment..."
+  },
+  "forgot_password": {
+    "title": "Forgot Password",
+    "subtitle": "Please enter your email address",
+    "email_placeholder": "Email Address",
+    "email_required": "Please enter your email address.",
+    "invalid_email": "Please enter a valid email address.",
+    "link_error": "Unable to open reset link. Please check your email manually.",
+    "success_message": "Reset link sent successfully. Please check your email.",
+    "error_message": "Failed to send reset link. Please try again.",
+    "sending": "Sending...",
+    "submit": "Submit"
+  },
+  "message_modal": {
+    "dismiss": "Dismiss"
+  },
+  "actors": {
+    "title": "Actors",
+    "description": "This is {name}'s description."
+  }
+}
