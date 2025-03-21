@@ -1063,8 +1063,10 @@ const ChapterScreen = () => {
                       </Text>
                     </TouchableOpacity>
                   </View>
+
                 </View>
               </View>
+              
             </View>
           ) : (
             <View style={styles.cardContent}>
