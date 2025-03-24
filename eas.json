@@ -1,0 +1,19 @@
+{
+  "cli": {
+    "version": ">= 3.0.0",
+    "appVersionSource": "remote",
+    "requireCommit": true
+  },
+  "build": {
+    "production": {
+      "android": {
+        "buildType": "apk",
+        "env": {
+          "EAS_BUILD_GRADLE_KOTLIN_VERSION": "1.9.25",
+          "EAS_BUILD_GRADLE_VERSION": "8.0.2"
+        }
+      },
+      "channel": "production"
+    }
+  }
+}

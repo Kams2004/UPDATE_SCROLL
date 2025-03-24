@@ -1,0 +1,98 @@
+{
+  "expo": {
+    "name": "ScrolBox",
+    "slug": "scrolbox",
+    "version": "1.0.0",
+    "runtimeVersion": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon12.png",
+    "scheme": "myapp",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/icon12.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#7d3b1b"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "This app requires access to your photo library for downloading and saving files.",
+        "NSDocumentsFolderUsageDescription": "This app requires access to your documents folder to save and manage files."
+      },
+      "associatedDomains": [
+        "applinks:staging.dcamwrny8wtxs.amplifyapp.com"
+      ]
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon12.png",
+        "backgroundColor": "#7d3b1b"
+      },
+      "permissions": [
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_MEDIA_LOCATION",
+        "android.permission.INTERNET"
+      ],
+      "package": "com.guy654.ScrollBoxApp",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "https",
+              "host": "staging.dcamwrny8wtxs.amplifyapp.com",
+              "pathPrefix": "/reset-password"
+            },
+            {
+              "scheme": "myapp",
+              "host": "reset-password"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-video",
+      "expo-localization",
+      [
+        "expo-file-system",
+        {
+          "permissions": {
+            "READ_EXTERNAL_STORAGE": "Allow the app to read external storage",
+            "WRITE_EXTERNAL_STORAGE": "Allow the app to write external storage",
+            "photosPermission": "The app needs access to media library to detect screen captures.",
+            "savePhotosPermission": "The app needs access to media library to detect screen captures.",
+            "isAccessMediaLocationEnabled": true
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "6eb51b96-cefe-4dd0-a89b-b876064a2775"
+      }
+    },
+    "owner": "kams2004",
+    "updates": {
+      "url": "https://u.expo.dev/6eb51b96-cefe-4dd0-a89b-b876064a2775"
+    }
+  }
+}

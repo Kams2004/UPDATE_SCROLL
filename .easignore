@@ -1,0 +1,37 @@
+/android
+/ios
+bfg-1.14.0.jar
+/bfg-1.14.0.jar
+
+# Exclude dependencies and unnecessary files
+node_modules/
+.git/
+android/.gradle/
+android/.idea/
+android/app/build/
+ios/Pods/
+ios/build/
+ios/.DS_Store
+
+# Exclude local Expo and IDE files
+.expo/
+.vscode/
+.idea/
+*.log
+
+# Exclude unnecessary assets
+assets/videos/Anim_Scrolbox_Kijins_Large_Alpha.mp4
+assets/videos/Anim_Scrolbox_Kijins_Large_Bravo.mp4
+assets/videos/
+assets/videos/en/
+assets/videos/fr/
+*.mp4
+*.mov
+*.zip
+*.rar
+*.psd
+*.ai
+*.eps
+*.svg  
+assets/audio/CAPSULE map.mp3
+*.mp3
