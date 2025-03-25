@@ -17,53 +17,99 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
 
-  downloadButton: {
-    // backgroundColor: '#4CAF50', // Green color for download button
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minWidth: 5,
+  // downloadButton: {
+  //   // backgroundColor: '#4CAF50', // Green color for download button
+  //   paddingHorizontal: 16,
+  //   paddingVertical: 8,
+  //   borderRadius: 4,
+  //   justifyContent: "center",
+  //   alignItems: "center",
+  //   minWidth: 5,
+  // },
+  // Add these to your existing styles
+  disabledButton: {
+    opacity: 0.6,
   },
-// Add these to your existing styles
-downloadProgressContainer: {
-  width: 30,
-  height: 30,
-  justifyContent: 'center',
-  alignItems: 'center',
-  position: 'relative',
-},
-progressCircle: {
-  position: 'absolute',
-  transform: [{ rotate: '-90deg' }], // Start from top
-},
-pauseIcon: {
-  flexDirection: 'row',
-  justifyContent: 'center',
-  alignItems: 'center',
-  width: '100%',
-  height: '100%',
-},
-pauseImage: {
-  width: 15,
-  height: 15,
-  resizeMode: 'contain',
-  tintColor: '#FFFFFF',
-},
-pauseBar: {
-  width: 3,
-  height: 12,
-  backgroundColor: '#FFFFFF',
-  marginHorizontal: 1,
-},
-// In your styles
-downloadIcon: {
-  width: 20, // Reduced width
-  height: 23.5, // Reduced height
-  resizeMode: "stretch", 
-  tintColor: '#FFFFFF',
-},
+  downloadProgressContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+  },
+  downloaddownloadSpinner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  downloadIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 5,
+    tintColor: "#FFFFFF",
+  },
+  downloadButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  progressPercentage: {
+    marginLeft: 8,
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+
+  readButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 4,
+    justifyContent: "center",
+    alignItems: "center",
+    minWidth: 80,
+  },
+  readButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  // Add these to your existing styles
+  downloadProgressContainer: {
+    width: 30,
+    height: 30,
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
+  },
+  progressCircle: {
+    position: "absolute",
+    transform: [{ rotate: "-90deg" }], // Start from top
+  },
+  pauseIcon: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
+    height: "100%",
+  },
+  pauseImage: {
+    width: 15,
+    height: 15,
+    resizeMode: "contain",
+    tintColor: "#FFFFFF",
+  },
+  pauseBar: {
+    width: 3,
+    height: 12,
+    backgroundColor: "#FFFFFF",
+    marginHorizontal: 1,
+  },
+  // In your styles
+  downloadIcon: {
+    width: 20, // Reduced width
+    height: 23.5, // Reduced height
+    resizeMode: "stretch",
+    tintColor: "#FFFFFF",
+  },
   paymentMethodTitle: {
     fontSize: 16,
     fontWeight: "600",
@@ -291,6 +337,52 @@ downloadIcon: {
     fontSize: 10,
     color: "#f5f5f5",
   },
+  downloadSpinner: {
+    marginRight: 8,
+  },
+  // downloadSpinner: {
+  //   flexDirection: "row",
+  //   alignItems: "center",
+  //   justifyContent: "center",
+  // },
+  downloadControlButton: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  downloadingButton: {
+    opacity: 0.8,
+  },
+  buttonIcon: {
+    color: "#FFFFFF",
+    marginRight: 8,
+  },
+  progressControlIcon: {
+    color: "#FFFFFF",
+  },
+  downloadProgressContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    paddingHorizontal: 5,
+  },
+  progressBarBackground: {
+    height: 4,
+    backgroundColor: "rgba(255,255,255,0.3)",
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    backgroundColor: "#FFFFFF",
+  },
+  progressPercentage: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "bold",
+    minWidth: 30,
+    textAlign: "right",
+  },
   readButton: {
     backgroundColor: "#7D3B1C",
     paddingVertical: 5,
@@ -298,11 +390,6 @@ downloadIcon: {
     borderRadius: 10,
     alignSelf: "center",
     marginRight: 10,
-  },
-  readButtonText: {
-    color: "#FFFFFF",
-    fontSize: 22,
-    fontWeight: "bold",
   },
   cardContent: {
     flexDirection: "row",
@@ -604,7 +691,7 @@ downloadIcon: {
     shadowRadius: 3.84,
     elevation: 5,
   },
-  basketButtonContent: {
+  basketdownloadSpinner: {
     position: "absolute",
     alignItems: "center", // Center children horizontally
     justifyContent: "center", // Center children vertically

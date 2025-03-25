@@ -73,7 +73,8 @@
     "buy": "Buy",
     "previous": "Previous",
     "next": "Next",
-    "purchase": "Purchase"
+    "purchase": "Purchase",
+    "download":"download"
   },
   "general": {
     "close": "Close"

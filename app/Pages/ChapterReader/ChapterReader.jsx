@@ -25,11 +25,11 @@ import { PinchGestureHandler, State } from "react-native-gesture-handler";
 import * as MediaLibrary from "expo-media-library";
 import { usePreventScreenCapture } from "expo-screen-capture";
 import AnimatedDownloadModal from "./AnimatedDownloadModal";
-import { 
-  isChapterDownloaded, 
-  getChapterFilePath, 
-  saveDownloadedChapter 
-} from './storageHelpers';
+import {
+  isChapterDownloaded,
+  getChapterFilePath,
+  saveDownloadedChapter,
+} from "./storageHelpers";
 const CACHE_EXPIRY = 48 * 60 * 60 * 1000; // 48 hours
 const MIN_SCALE = 1;
 const MAX_SCALE = 3;
@@ -488,7 +488,6 @@ const ChapterReader = ({
   };
   const loadChapter = async () => {
     try {
-
       const isDownloaded = await isChapterDownloaded(chapterId);
       if (isDownloaded) {
         const filePath = await getChapterFilePath(chapterId);
