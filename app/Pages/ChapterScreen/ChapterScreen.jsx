@@ -4,7 +4,7 @@ import {
   getChapterFilePath,
   saveDownloadedChapter,
 } from "../ChapterReader/storageHelpers";
-
+import DownloadProgressIndicator from "./DownloadProgressIndicator";
 import { useRef } from "react";
 import JSZip from "jszip";
 import { Buffer } from "buffer";
@@ -34,19 +34,11 @@ import ApiService from "../../Services/ApiService";
 import ChapterReader from "../ChapterReader/ChapterReader";
 import MessageModal from "../MessageModal/MessageModal";
 import i18n from "../locales/i18n";
-import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import {
-  faDownload,
-  faPlay,
-  faPause,
-  faBookOpen,
-  faShoppingCart,
-} from "@fortawesome/free-solid-svg-icons";
 const { height } = Dimensions.get("window");
 import { useTranslation } from "react-i18next";
 import Loader from "../../../components/Loader";
 import SocialInteractions from "../SocialInteractions/SocialInteractions";
-import * as FileSystem from "expo-file-system";
+
 const DEFAULT_IMAGES = {
   thumbnail: require("./../../../assets/scrollboxImg/06.png"),
   liked: require("../../../assets/scrollboxImg/like.png"),
@@ -70,12 +62,13 @@ const ChapterScreen = () => {
   const [selectedChapterForReading, setSelectedChapterForReading] =
     useState(null);
   const [socialInteractions, setSocialInteractions] = useState(null);
-  const [downloadStates, setDownloadStates] = useState({});
-  const [activeDownloads, setActiveDownloads] = useState({});
   const [showWebView, setShowWebView] = useState(false);
   const [chapterCommentCounts, setChapterCommentCounts] = useState({});
+
+  const [downloadingChapters, setDownloadingChapters] = useState({});
   const [cartItemsCount, setCartItemsCount] = useState(0);
   const [paymentUrl, setPaymentUrl] = useState(null);
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [paymentLink, setPaymentLink] = useState(null);
   const navigation = useNavigation();
@@ -86,7 +79,6 @@ const ChapterScreen = () => {
   const [visibleCommentForChapter, setVisibleCommentForChapter] =
     useState(null);
   const [chapters, setChapters] = useState([]);
-  const [selectedLanguage, setSelectedLanguage] = useState("en"); // Already in your code
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -163,6 +155,46 @@ const ChapterScreen = () => {
     };
     loadDownloadedChapters();
   }, []);
+  const handleDownloadStart = (chapterId) => {
+    setDownloadingChapters((prev) => ({
+      ...prev,
+      [chapterId]: {
+        progress: 0,
+        stage: "Starting download...",
+        isPaused: false,
+      },
+    }));
+  };
+
+  const handleDownloadProgress = (chapterId, progress, stage) => {
+    setDownloadingChapters((prev) => ({
+      ...prev,
+      [chapterId]: {
+        ...prev[chapterId],
+        progress,
+        stage,
+      },
+    }));
+  };
+
+  const handleDownloadComplete = (chapterId) => {
+    setDownloadingChapters((prev) => {
+      const newState = { ...prev };
+      delete newState[chapterId];
+      return newState;
+    });
+    // Update downloaded chapters state
+    setDownloadedChapters((prev) => new Set([...prev, chapterId]));
+  };
+
+  const handleDownloadError = (chapterId, error) => {
+    setDownloadingChapters((prev) => {
+      const newState = { ...prev };
+      delete newState[chapterId];
+      return newState;
+    });
+    showMessage(`Download failed: ${error}`, "error");
+  };
 
   useEffect(() => {
     const fetchComics = async () => {
@@ -984,88 +1016,119 @@ const ChapterScreen = () => {
       ? DEFAULT_IMAGES.inCart
       : DEFAULT_IMAGES.logo;
 
-    // Get current download state for this chapter
-    const chapterDownloadState = downloadStates[chapter.id] || {};
-    const isDownloadingThisChapter = currentlyDownloadingChapter === chapter.id;
-    const isPaused = chapterDownloadState.paused;
-    const downloadProgress = chapterDownloadState.progress || 0;
-
-    // Define all handler functions properly
-    const handleLikeClick = async () => {
+    // Determine the button state
+    let buttonState;
+    if (isDownloaded) {
+      buttonState = "READ";
+    } else if (isPurchased || isFirstChapter) {
+      buttonState = "DOWNLOAD";
+    } else {
+      buttonState = "BUY";
+    }
+    const handleButtonPress = async () => {
       try {
-        if (!socialInteractions) {
-          console.error("SocialInteractions not initialized");
-          return;
-        }
+        switch (buttonState) {
+          case "READ":
+            // Open the downloaded chapter
+            setSelectedChapterForReading(chapter.id);
+            break;
 
-        const result = await socialInteractions.toggleLike(
-          chapter.id,
-          navigation,
-          showMessage,
-          t
-        );
+          case "DOWNLOAD":
+            // Download the chapter
+            await handleDownloadClick(chapter.id);
+            break;
 
-        if (result.success) {
-          setChapters((prevChapters) =>
-            prevChapters.map((c) =>
-              c.id === chapter.id
-                ? { ...c, likes: result.likes, hasLiked: result.hasLiked }
-                : c
-            )
-          );
-
-          setLikedChapters((prev) => {
-            const newLiked = new Set(prev);
-            if (result.hasLiked) {
-              newLiked.add(chapter.id);
-            } else {
-              newLiked.delete(chapter.id);
+          case "BUY":
+            // Add to cart and show purchase modal
+            const addedToCart = await handleAddToCart(chapter.id);
+            if (addedToCart) {
+              setIsPurchaseModalVisible(true);
             }
-            return newLiked;
-          });
+            break;
         }
       } catch (error) {
-        console.error("Error toggling like:", error);
-        showMessage(t("errors.like_failed"), "error");
+        console.error("Error handling button press:", error);
+        showMessage("An error occurred. Please try again.", "error");
       }
+    };
+    const getSafeImageSource = (imageUri, defaultImage) => {
+      return imageUri && typeof imageUri === "object" && imageUri.uri
+        ? imageUri
+        : defaultImage;
+    };
+
+    const handleLikeClick = async () => {
+      await handleLike(chapter.id);
     };
 
     const handleViewClick = async () => {
-      try {
-        if (!socialInteractions) {
-          console.error("SocialInteractions not initialized");
-          return;
-        }
-
-        const result = await socialInteractions.viewChapter(
-          chapter.id,
-          navigation,
-          showMessage,
-          t
-        );
-
-        if (result.success) {
-          setChapters((prevChapters) =>
-            prevChapters.map((c) =>
-              c.id === chapter.id ? { ...c, views: result.views } : c
-            )
-          );
-          setSelectedChapterForReading(chapter.id);
-        }
-      } catch (error) {
-        console.error("Error viewing chapter:", error);
-        showMessage(t("errors.view_failed"), "error");
-      }
+      await handleViewChapter(chapter.id);
     };
+    const DownloadProgress = ({ progress, isPaused, onTogglePause }) => {
+      const circumference = 2 * Math.PI * 13;
+      const strokeDashoffset = circumference - (progress / 100) * circumference;
 
-    const handleButtonPress = async () => {
+      return (
+        <TouchableOpacity
+          onPress={onTogglePause}
+          style={styles.downloadProgressContainer}
+        >
+          {/* Progress circle */}
+          <View style={styles.progressCircle}>
+            <svg width="30" height="30" viewBox="0 0 30 30">
+              <circle
+                cx="15"
+                cy="15"
+                r="13"
+                fill="none"
+                stroke="#EF7F1A"
+                strokeWidth="2"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+              />
+            </svg>
+          </View>
+
+          {/* Pause/Resume icon in center */}
+          {isPaused ? (
+            <Image
+              source={require("./../../../assets/scrollboxImg/ev.png")}
+              style={styles.pauseImage}
+            />
+          ) : (
+            <View style={styles.pauseIcon}>
+              <View style={styles.pauseBar} />
+              <View style={styles.pauseBar} />
+            </View>
+          )}
+        </TouchableOpacity>
+      );
+    };
+    const handleReadOrBuyClick = async () => {
       try {
-        if (isDownloaded) {
+        if (isPurchased || isFirstChapter) {
+          const token = await AsyncStorage.getItem("userToken");
+          if (!token) {
+            navigation.navigate("UserProfile", { screen: "LoginPage" });
+            return;
+          }
+
+          const selectedChapterData = {
+            id: chapter.id,
+            language: selectedLanguage,
+          };
+
+          await AsyncStorage.setItem(
+            "selectedChapterForReading",
+            JSON.stringify(selectedChapterData)
+          );
+
+          setTimeout(() => {
+            setSelectedChapterForReading(chapter.id);
+          }, 100);
+        } else if (chapter.isDownloaded) {
+          // If the chapter is downloaded, directly set it for reading
           setSelectedChapterForReading(chapter.id);
-        } else if (isDownloadingThisChapter) {
-          await handleDownloadClick(chapter.id);
-        } else if (isPurchased || isFirstChapter) {
-          await handleDownloadClick(chapter.id);
         } else {
           const addedToCart = await handleAddToCart(chapter.id);
           if (addedToCart) {
@@ -1073,195 +1136,84 @@ const ChapterScreen = () => {
           }
         }
       } catch (error) {
-        console.error("Error handling button press:", error);
-        showMessage("An error occurred. Please try again.", "error");
+        console.error("Error opening chapter:", error);
+        Alert.alert(
+          "Error",
+          "There was an error opening the chapter. Please try again."
+        );
       }
     };
 
     const handleDownloadClick = async (chapterId) => {
       try {
-        // Check if download is already in progress
-        if (activeDownloads[chapterId]) {
-          if (downloadStates[chapterId]?.paused) {
-            // Resume paused download
-            await activeDownloads[chapterId].resumeAsync();
-            setDownloadStates((prev) => ({
-              ...prev,
-              [chapterId]: { ...prev[chapterId], paused: false },
-            }));
-          } else {
-            // Pause active download
-            await activeDownloads[chapterId].pauseAsync();
-            setDownloadStates((prev) => ({
-              ...prev,
-              [chapterId]: { ...prev[chapterId], paused: true },
-            }));
-          }
-          return;
-        }
+        handleDownloadStart(chapterId);
 
-        // Start new download
-        setCurrentlyDownloadingChapter(chapterId);
-        setIsDownloading(true);
-        setDownloadStates((prev) => ({
-          ...prev,
-          [chapterId]: {
-            progress: 0,
-            paused: false,
-            language: selectedLanguage,
-          },
-        }));
+        const downloadUrl = `https://q1x8l0qpnb.execute-api.eu-west-3.amazonaws.com/production/api/chapter/${chapterId}/${selectedLanguage}`;
 
-        const token = await AsyncStorage.getItem("userToken");
-        if (!token) {
-          showMessage("Please login to download chapters", "error");
-          navigation.navigate("Login");
-          return;
-        }
+        const downloadDir = `${FileSystem.cacheDirectory}downloads/`;
+        await FileSystem.makeDirectoryAsync(downloadDir, {
+          intermediates: true,
+        });
+        const fileUri = `${downloadDir}${chapterId}_${selectedLanguage}.cbz`;
 
         const downloadResumable = FileSystem.createDownloadResumable(
-          `https://q1x8l0qpnb.execute-api.eu-west-3.amazonaws.com/production/api/chapter/${chapterId}/${
-            selectedLanguage || "en"
-          }`,
-          await getChapterFilePath(chapterId, selectedLanguage),
-          { headers: { Authorization: `Bearer ${token}` } },
+          downloadUrl,
+          fileUri,
+          {
+            headers: { Authorization: `Bearer ${user.token}` },
+          },
           (downloadProgress) => {
             const progress =
-              (downloadProgress.totalBytesWritten /
-                downloadProgress.totalBytesExpectedToWrite) *
-              100;
-            setDownloadStates((prev) => ({
-              ...prev,
-              [chapterId]: { ...prev[chapterId], progress },
-            }));
+              downloadProgress.totalBytesWritten /
+              downloadProgress.totalBytesExpectedToWrite;
+            handleDownloadProgress(chapterId, progress, "Downloading...");
           }
         );
 
-        // Store the download resumable for pause/resume
-        setActiveDownloads((prev) => ({
-          ...prev,
-          [chapterId]: downloadResumable,
-        }));
-
-        // Start the download
         const { uri } = await downloadResumable.downloadAsync();
 
-        if (uri) {
-          // Download completed successfully
-          await handleDownloadComplete(chapterId, uri);
+        if (!uri) {
+          throw new Error("Download failed");
         }
+
+        // Extract and save chapter
+        await extractAndSaveChapter(uri, chapterId);
+
+        handleDownloadComplete(chapterId);
       } catch (error) {
-        console.error("Download error:", error);
-        if (!downloadStates[chapterId]?.paused) {
-          showMessage("Failed to download chapter", "error");
-          // Clean up download state
-          setDownloadStates((prev) => {
-            const newState = { ...prev };
-            delete newState[chapterId];
-            return newState;
-          });
-        }
-      } finally {
-        // Clean up active downloads
-        setActiveDownloads((prev) => {
-          const newState = { ...prev };
-          delete newState[chapterId];
-          return newState;
-        });
-        setCurrentlyDownloadingChapter(null);
-        setIsDownloading(false);
+        handleDownloadError(chapterId, error.message);
       }
     };
 
     const handleDownloadComplete = async (chapterId, uri) => {
       try {
-        // Save the chapter to storage
-        await saveDownloadedChapter(chapterId, selectedLanguage);
+        await saveDownloadedChapter(chapterId);
+        setDownloadedChapters((prev) => new Set([...prev, chapterId]));
 
-        // Update downloaded chapters state
-        setDownloadedChapters((prev) => {
-          const newSet = new Set(prev);
-          newSet.add(chapterId);
-          return newSet;
-        });
-
-        // Extract images from CBZ
+        // Extract the downloaded file
         const pages = await extractImagesFromCBZ(uri);
         if (pages.length > 0) {
           showMessage("Chapter downloaded successfully!", "success");
-
-          // Automatically open the chapter for reading
+          // Set the chapter for reading automatically
           setSelectedChapterForReading(chapterId);
+        } else {
+          throw new Error("Failed to extract chapter content");
         }
       } catch (error) {
         console.error("Download completion error:", error);
         showMessage("Failed to process downloaded chapter", "error");
       }
     };
-
     const handleAddToBasket = async () => {
       if (isPurchased || isFirstChapter) {
+        // For purchased items, toggle expansion
         toggleContentVisibility(index);
-      } else {
+      } else if (!isFirstChapter) {
+        // For non-purchased items, add to cart
         await handleAddToCart(chapter.id);
       }
     };
 
-    const renderButtonContent = (chapter) => {
-      const isDownloaded = downloadedChapters.has(chapter.id);
-      const isDownloadingThisChapter =
-        currentlyDownloadingChapter === chapter.id;
-      const chapterDownloadState = downloadStates[chapter.id] || {};
-      const isPaused = chapterDownloadState.paused;
-      const downloadProgress = chapterDownloadState.progress || 0;
-      const isPurchased = chapter.isFree || chapter.isPurchased;
-
-      if (isDownloadingThisChapter) {
-        return (
-          <View style={styles.downloadProgressContainer}>
-            <TouchableOpacity
-              onPress={() => handleDownloadClick(chapter.id)}
-              style={styles.downloadControlButton}
-            >
-              <FontAwesomeIcon
-                icon={isPaused ? faPlay : faPause}
-                style={[styles.progressControlIcon, styles.largeIcon]}
-                size={24} // Increased size
-              />
-            </TouchableOpacity>
-            <View style={styles.progressBarContainer}>
-              <View style={styles.progressBarBackground}>
-                <View
-                  style={[
-                    styles.progressBarFill,
-                    { width: `${downloadProgress}%` },
-                  ]}
-                />
-              </View>
-            </View>
-            <Text style={styles.progressPercentage}>
-              {Math.round(downloadProgress)}%
-            </Text>
-          </View>
-        );
-      }
-
-      if (isDownloaded) {
-        return <Text style={styles.readButtonText}>{t("chapter.read")}</Text>;
-      }
-
-      if (isPurchased) {
-        return (
-          <FontAwesomeIcon
-            icon={faDownload}
-            style={[styles.buttonIcon, styles.largeIcon]}
-            size={24} // Increased size
-          />
-        );
-      }
-
-      return <Text style={styles.readButtonText}>{t("chapter.buy")}</Text>;
-    };
     return (
       <SafeAreaView key={chapter.id} style={styles.cardContainer}>
         <TouchableOpacity
@@ -1277,6 +1229,11 @@ const ChapterScreen = () => {
                 )}
                 style={styles.topImage}
                 defaultSource={DEFAULT_IMAGES.large}
+                onError={() => {
+                  console.warn(
+                    `Large image load error for chapter ${chapter.id}`
+                  );
+                }}
               />
               <View style={styles.cardContent}>
                 <Image
@@ -1286,13 +1243,24 @@ const ChapterScreen = () => {
                   )}
                   style={styles.cardImage}
                   defaultSource={DEFAULT_IMAGES.thumbnail}
+                  onError={() => {
+                    console.warn(
+                      `Thumbnail image load error for chapter ${chapter.id}`
+                    );
+                  }}
                 />
                 <View style={styles.textContainerRight}>
                   <Text style={styles.synopsisTitle}>{chapter.title}</Text>
                   <TouchableOpacity
                     onPress={() => toggleTextExpansion(chapter.id)}
                   >
-                    <Text style={styles.descriptionText}>
+                    <Text
+                      style={[
+                        styles.descriptionText,
+                        !expandedText[chapter.id] && { maxHeight: 60 },
+                      ]}
+                      numberOfLines={expandedText[chapter.id] ? undefined : 3}
+                    >
                       {chapter.description}
                     </Text>
                   </TouchableOpacity>
@@ -1349,25 +1317,39 @@ const ChapterScreen = () => {
                     <TouchableOpacity
                       style={[
                         styles.readButton,
-                        isDownloaded
+                        buttonState === "READ"
                           ? styles.freeChapterButton
-                          : isPurchased || isFirstChapter
+                          : buttonState === "DOWNLOAD"
                           ? styles.downloadButton
                           : styles.paidChapterButton,
-                        isDownloading &&
-                          !isDownloadingThisChapter &&
-                          styles.disabledButton,
                       ]}
-                      onPress={() => {
-                        if (isDownloaded) {
-                          setSelectedChapterForReading(chapter.id);
-                        } else {
-                          handleDownloadClick(chapter.id);
-                        }
-                      }}
-                      disabled={isDownloading && !isDownloadingThisChapter}
+                      onPress={handleButtonPress}
+                      disabled={
+                        isDownloading &&
+                        currentlyDownloadingChapter !== chapter.id
+                      }
                     >
-                      {renderButtonContent(chapter)}
+                      {buttonState === "READ" ? (
+                        <Text style={styles.readButtonText}>Read</Text>
+                      ) : buttonState === "DOWNLOAD" ? (
+                        isDownloading &&
+                        currentlyDownloadingChapter === chapter.id ? (
+                          <DownloadProgress
+                            progress={downloadProgress}
+                            isPaused={isDownloadingPaused}
+                            onTogglePause={() =>
+                              handleDownloadClick(chapter.id)
+                            }
+                          />
+                        ) : (
+                          <Image
+                            source={DEFAULT_IMAGES.download}
+                            style={styles.downloadIcon}
+                          />
+                        )
+                      ) : (
+                        <Text style={styles.readButtonText}>Buy</Text>
+                      )}
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1382,6 +1364,11 @@ const ChapterScreen = () => {
                 )}
                 style={styles.cardImage}
                 defaultSource={DEFAULT_IMAGES.thumbnail}
+                onError={() => {
+                  console.warn(
+                    `Collapsed image load error for chapter ${chapter.id}`
+                  );
+                }}
               />
               <View style={styles.iconsRow}>
                 <TouchableOpacity
@@ -1618,5 +1605,4 @@ const ChapterScreen = () => {
     </SafeAreaView>
   );
 };
-
 export default ChapterScreen;

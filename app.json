@@ -19,9 +19,7 @@
         "NSPhotoLibraryUsageDescription": "This app requires access to your photo library for downloading and saving files.",
         "NSDocumentsFolderUsageDescription": "This app requires access to your documents folder to save and manage files."
       },
-      "associatedDomains": [
-        "applinks:staging.dcamwrny8wtxs.amplifyapp.com"
-      ]
+      "associatedDomains": ["applinks:staging.dcamwrny8wtxs.amplifyapp.com"]
     },
     "android": {
       "adaptiveIcon": {
@@ -49,10 +47,7 @@
               "host": "reset-password"
             }
           ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
     },

@@ -130,9 +130,13 @@ const ApiService = {
     }
   },
 
-  getAllUsers: async () => {
+  getAllUsers: async (token) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/users`);
+      const response = await axios.get(`${API_BASE_URL}/user'`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       return response.data;
     } catch (error) {
       handleApiError(error);
@@ -152,14 +156,14 @@ const ApiService = {
   },
   createUser: async (userData) => {
     try {
-      const { name, email, password, phoneNumber, phonePrefix } = userData;
+      const { name, email, password, phoneNumber, countryCode } = userData;
 
       console.log("🛠️ Sending API Request with payload:", {
         name,
         email,
         password,
         phoneNumber,
-        phonePrefix,
+        countryCode,
       }); // Comprehensive debug log
 
       const response = await axios.post(
@@ -169,7 +173,7 @@ const ApiService = {
           email,
           password,
           phoneNumber,
-          phonePrefix,
+          countryCode,
         },
         {
           headers: {

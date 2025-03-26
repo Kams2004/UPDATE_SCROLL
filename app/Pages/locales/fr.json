@@ -138,18 +138,20 @@
     "password_hide": "Masquer",
     "google_signin": "Connectez-vous avec Google",
     "sign_up": "Nouveau sur Scrollbox ? ",
-        "sign_up_link": "Inscrivez-vous maintenant"
+    "sign_up_link": "Inscrivez-vous maintenant"
   },
   "signup": {
     "title": "S'inscrire",
     "name_placeholder": "Nom",
     "email_placeholder": "E-mail",
+    "error_phone_invalid": "Numéro de téléphone invalid",
     "phone_placeholder": "Numéro de téléphone",
     "password_placeholder": "Mot de passe",
+    "error_phone_required": "Numéro de téléphone requis",
     "texts": "J'accepte les ",
     "terms": "termes et conditions",
     "signup_button": "S'inscrire",
-    "texts_login":"Vous avez déjà un compte ? ",
+    "texts_login": "Vous avez déjà un compte ? ",
     "login_link": "Connexion",
     "error_name_required": "Le nom est requis",
     "error_email_required": "L'e-mail est requis",

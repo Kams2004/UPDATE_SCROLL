@@ -5,7 +5,7 @@ import WebView from "react-native-webview";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 
-export const GoogleSignUpModal = ({ visible, onClose, onSuccess }) => {
+export const GoogleAuthWebView = ({ visible, onClose, onSuccess }) => {
   const navigation = useNavigation();
 
   const handleNavigationStateChange = async (navState) => {

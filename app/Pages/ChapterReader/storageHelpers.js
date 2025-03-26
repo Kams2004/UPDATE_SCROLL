@@ -115,3 +115,76 @@ export const extractImagesFromCBZ = async (cbzUri, chapterId) => {
     throw error;
   }
 };
+
+export const downloadChapter = async (chapterId, language, token) => {
+  try {
+    // 1. Prepare directories
+    const cbzPath = await getChapterFilePath(chapterId);
+    const extractDir = await getChapterExtractPath(chapterId);
+
+    // Create parent directory if it doesn't exist
+    await FileSystem.makeDirectoryAsync(await getChapterDirectory(), {
+      intermediates: true,
+    });
+
+    // 2. Download the CBZ file
+    const downloadUrl = `https://q1x8l0qpnb.execute-api.eu-west-3.amazonaws.com/production/api/chapter/${chapterId}/${language}`;
+
+    const downloadResumable = FileSystem.createDownloadResumable(
+      downloadUrl,
+      cbzPath,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/zip",
+        },
+      },
+      (downloadProgress) => {
+        const progress =
+          downloadProgress.totalBytesWritten /
+          downloadProgress.totalBytesExpectedToWrite;
+        console.log(`Download progress: ${(progress * 100).toFixed(2)}%`);
+      }
+    );
+
+    console.log("Starting download...");
+    const { uri } = await downloadResumable.downloadAsync();
+
+    if (!uri) {
+      throw new Error("Download failed - no URI returned");
+    }
+
+    console.log("Download completed, verifying file...");
+    const fileInfo = await FileSystem.getInfoAsync(uri);
+    if (!fileInfo.exists || fileInfo.size === 0) {
+      throw new Error("Downloaded file is empty or does not exist");
+    }
+
+    // 3. Extract the CBZ file
+    console.log("Extracting images...");
+    const extractedPages = await extractImagesFromCBZ(uri, chapterId);
+
+    // 4. Save download record
+    await saveDownloadedChapter(chapterId);
+
+    console.log("Chapter download and extraction completed successfully");
+    return extractedPages;
+  } catch (error) {
+    console.error("Download error:", error);
+
+    // Clean up if something went wrong
+    try {
+      await FileSystem.deleteAsync(await getChapterFilePath(chapterId), {
+        idempotent: true,
+      });
+      await FileSystem.deleteAsync(await getChapterExtractPath(chapterId), {
+        idempotent: true,
+        recursive: true,
+      });
+    } catch (cleanupError) {
+      console.error("Cleanup error:", cleanupError);
+    }
+
+    throw error;
+  }
+};

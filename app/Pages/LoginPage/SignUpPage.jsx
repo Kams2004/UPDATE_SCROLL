@@ -32,7 +32,6 @@ function SignUpPage() {
   const navigation = useNavigation();
   const { t } = useTranslation();
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
-
   const nameInputRef = useRef(null);
   const emailInputRef = useRef(null);
   const passwordInputRef = useRef(null);
@@ -82,7 +81,7 @@ function SignUpPage() {
         return false;
       }
       if (nameValue.length < 2) {
-        setNameError("Name must be at least 2 characters long");
+        setNameError(t("signup.error_name_length"));
         return false;
       }
       setNameError("");
@@ -123,18 +122,21 @@ function SignUpPage() {
     [t]
   );
 
-  const validatePhoneNumber = useCallback((phoneVal) => {
-    if (!phoneVal) {
-      setPhoneNumberError("Please enter a phone number");
-      return false;
-    }
-    if (phoneVal.length < 9 || phoneVal.length > 12) {
-      setPhoneNumberError("Invalid phone number");
-      return false;
-    }
-    setPhoneNumberError("");
-    return true;
-  }, []);
+  const validatePhoneNumber = useCallback(
+    (phoneVal) => {
+      if (!phoneVal) {
+        setPhoneNumberError(t("signup.error_phone_required"));
+        return false;
+      }
+      if (phoneVal.length < 9 || phoneVal.length > 12) {
+        setPhoneNumberError(t("signup.error_phone_invalid"));
+        return false;
+      }
+      setPhoneNumberError("");
+      return true;
+    },
+    [t]
+  );
 
   const handleSignUp = useCallback(async () => {
     Keyboard.dismiss();
@@ -157,22 +159,31 @@ function SignUpPage() {
     setIsLoading(true);
 
     try {
-      const formattedPhoneNumber = phoneNumber.replace(/\D/g, "");
+      // Ensure phone number is cleaned and prefixed with country code
+      const formattedPhoneNumber = `${
+        selectedCountry.prefix
+      }${phoneNumber.replace(/\D/g, "")}`;
 
       const user = {
         name,
         email,
         password,
         phoneNumber: formattedPhoneNumber,
-        phonePrefix: selectedCountry.prefix,
+        countryCode: selectedCountry.code,
       };
+
+      // Debug log for request payload
+      console.log("🛠️ Signup Request Payload:", {
+        name: user.name,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        countryCode: user.countryCode,
+      });
 
       const response = await ApiService.createUser(user);
 
       if (response.status === "email_exists") {
-        setSuccessMessage(
-          "User already exists. Please log in or use a different email."
-        );
+        setSuccessMessage(t("signup.email_exists_message"));
         setModalActionType("email_exists");
         setIsSuccessModalVisible(true);
         return;
@@ -194,6 +205,13 @@ function SignUpPage() {
       throw new Error(response?.message || t("signup.signup_error"));
     } catch (error) {
       console.error("Sign-up error:", error);
+
+      // More detailed error logging
+      if (error.response) {
+        console.error("Error Response Data:", error.response.data);
+        console.error("Error Response Status:", error.response.status);
+      }
+
       setSuccessMessage(error.message || t("signup.signup_error"));
       setModalActionType("error");
       setIsSuccessModalVisible(true);
@@ -355,7 +373,7 @@ function SignUpPage() {
                         <TextInput
                           ref={phoneNumberInputRef}
                           style={[styles.input, styles.phoneInput]}
-                          placeholder="Enter your phone number"
+                          placeholder={t("signup.phone_placeholder")}
                           placeholderTextColor="#666"
                           value={phoneNumber}
                           onChangeText={(text) => {
@@ -470,7 +488,7 @@ function SignUpPage() {
                         )}
                       </TouchableOpacity>
                       <Text style={styles.termsText}>
-                        {t("signup.texts")}
+                        {t("signup.terms_text")}
                         <Text
                           style={styles.termsLink}
                           onPress={handleTermsLinkPress}
@@ -496,7 +514,9 @@ function SignUpPage() {
                     </TouchableOpacity>
 
                     <View style={styles.signUpWithContainer}>
-                      <Text style={styles.signUpWithText}>Sign up with</Text>
+                      <Text style={styles.signUpWithText}>
+                        {t("signup.signup_with")}
+                      </Text>
                       <TouchableOpacity
                         style={styles.googleButton}
                         onPress={() => setIsGoogleSignUpModalVisible(true)}
@@ -545,7 +565,9 @@ function SignUpPage() {
           >
             <View style={styles.countryModalContainer}>
               <View style={styles.countryModalContent}>
-                <Text style={styles.countryModalTitle}>Select a country</Text>
+                <Text style={styles.countryModalTitle}>
+                  {t("signup.select_country")}
+                </Text>
                 <FlatList
                   data={countries}
                   keyExtractor={(item) => item.prefix}
@@ -555,7 +577,9 @@ function SignUpPage() {
                   style={styles.closeCountryModalBtn}
                   onPress={() => setIsCountryModalVisible(false)}
                 >
-                  <Text style={styles.closeCountryModalBtnText}>Cancel</Text>
+                  <Text style={styles.closeCountryModalBtnText}>
+                    {t("signup.cancel")}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>

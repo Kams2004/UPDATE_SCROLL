@@ -19,7 +19,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ApiService from "../../Services/ApiService";
-import { GoogleSignUpModal } from "./GoogleAuthWebView";
+import { GoogleAuthWebView } from "./GoogleAuthWebView";
 
 const { width, height } = Dimensions.get("window");
 
@@ -345,7 +345,7 @@ export default function LoginPage() {
             </View>
           </Modal>
 
-          <GoogleSignUpModal
+          <GoogleAuthWebView
             visible={showGoogleAuth}
             onClose={() => setShowGoogleAuth(false)}
             onSuccess={handleGoogleAuthSuccess}

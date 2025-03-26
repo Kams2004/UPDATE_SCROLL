@@ -142,6 +142,8 @@
     "texts_login": "Already have an account? ",
     "login_link": "Login",
     "error_name_required": "Name is required",
+    "error_phone_required":"Phone number is required",
+    "error_phone_invalid":"invalid phone number",
     "error_email_required": "Email is required",
     "error_email_invalid": "Please enter a valid email address",
     "error_password_required": "Password is required",
