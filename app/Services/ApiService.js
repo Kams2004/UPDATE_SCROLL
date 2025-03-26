@@ -132,14 +132,16 @@ const ApiService = {
 
   getAllUsers: async (token) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/user'`, {
+      const response = await axios.get(`${API_BASE_URL}/user`, {
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       });
       return response.data;
     } catch (error) {
-      handleApiError(error);
+      console.error("Get users error:", error.response?.data || error.message);
+      throw error;
     }
   },
   getCurrentUser: async (token) => {

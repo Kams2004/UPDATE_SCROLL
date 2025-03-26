@@ -20,7 +20,7 @@ import { useTranslation } from "react-i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ApiService from "../../Services/ApiService";
 import { GoogleAuthWebView } from "./GoogleAuthWebView";
-
+import axios from "axios";
 const { width, height } = Dimensions.get("window");
 
 export default function LoginPage() {
@@ -93,7 +93,32 @@ export default function LoginPage() {
     },
     [hasBlurredPassword, hasSubmitted]
   );
+  const logStoredData = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const email = await AsyncStorage.getItem("email");
+      const userName = await AsyncStorage.getItem("userName");
+      const userID = await AsyncStorage.getItem("userID");
+      const countryCode = await AsyncStorage.getItem("countryCode");
+      const loginTime = await AsyncStorage.getItem("loginTime");
 
+      console.log("==== Stored Login Data ====");
+      console.log("Token:", token ? "✓ Token Exists" : "✗ No Token");
+      console.log("Email:", email || "No email stored");
+      console.log("User Name:", userName || "No username stored");
+      console.log("User ID:", userID || "No user ID stored");
+      console.log("Country Code:", countryCode || "No country code stored");
+      console.log(
+        "Login Time:",
+        loginTime
+          ? new Date(parseInt(loginTime)).toLocaleString()
+          : "No login time stored"
+      );
+      console.log("==== End of Stored Data ====");
+    } catch (error) {
+      console.error("Error logging stored data:", error);
+    }
+  };
   const handleLogin = useCallback(async () => {
     Keyboard.dismiss();
     setHasSubmitted(true);
@@ -119,8 +144,45 @@ export default function LoginPage() {
       const { token } = response;
 
       if (token) {
+        // Fetch user details using the specific API
+        const userResponse = await axios.get(
+          "https://q1x8l0qpnb.execute-api.eu-west-3.amazonaws.com/production/api/user",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const userData = userResponse.data.user;
+
+        // Log user details for debugging
+        console.log("===== User Details =====");
+        console.log("User ID:", userData._id);
+        console.log("Name:", userData.name);
+        console.log("Email:", userData.email);
+        console.log("Role:", userData.role);
+        console.log("Currency:", userData.currency);
+        console.log("Verified:", userData.verified);
+        console.log("Country Code:", userData.countryCode);
+        console.log("Created At:", userData.createdAt);
+        console.log("=======================");
+
+        // Store user data in AsyncStorage
         await AsyncStorage.setItem("token", token);
-        await AsyncStorage.setItem("email", trimmedEmail);
+        await AsyncStorage.setItem("email", userData.email);
+        await AsyncStorage.setItem("userName", userData.name);
+        await AsyncStorage.setItem("userID", userData._id);
+        await AsyncStorage.setItem("countryCode", userData.countryCode);
+        await AsyncStorage.setItem("userRole", userData.role);
+        await AsyncStorage.setItem("loginTime", Date.now().toString());
+
+        // Additional optional storage
+        await AsyncStorage.setItem("currency", userData.currency);
+        await AsyncStorage.setItem("verified", userData.verified.toString());
+
+        // Log the stored data for verification
+        await logStoredData();
 
         navigation.reset({
           index: 0,
@@ -131,7 +193,23 @@ export default function LoginPage() {
       }
     } catch (error) {
       console.error("Login Error:", error);
-      setPasswordError(error.message || t("login.credentials_error"));
+
+      // More detailed error logging
+      if (error.response) {
+        console.error("Error response data:", error.response.data);
+        console.error("Error response status:", error.response.status);
+        console.error("Error response headers:", error.response.headers);
+      } else if (error.request) {
+        console.error("Error request:", error.request);
+      } else {
+        console.error("Error message:", error.message);
+      }
+
+      setPasswordError(
+        error.response?.data?.message ||
+          error.message ||
+          t("login.credentials_error")
+      );
     } finally {
       setIsLoading(false);
     }

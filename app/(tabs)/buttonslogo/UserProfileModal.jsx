@@ -15,7 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "react-i18next";
 import i18n, { changeLanguage } from "../../Pages/locales/i18n";
-import { useRouter } from "expo-router"; // Import useRouter
+import { useRouter } from "expo-router";
 
 const { width, height } = Dimensions.get("window");
 
@@ -34,12 +34,17 @@ export default function UserProfileModal({ visible, onClose }) {
   // Fetch user and language data
   const fetchUserData = useCallback(async () => {
     try {
-      const email = await AsyncStorage.getItem("email");
+      const userName = await AsyncStorage.getItem("userName");
       const storedLang = await AsyncStorage.getItem("language");
 
-      if (email) {
-        const username = email.split("@")[0];
-        setLoggedInUser(username);
+      if (userName) {
+        setLoggedInUser(userName);
+      } else {
+        // Fallback to email if no username
+        const email = await AsyncStorage.getItem("email");
+        if (email) {
+          setLoggedInUser(email.split("@")[0]);
+        }
       }
 
       if (storedLang) {
@@ -166,26 +171,25 @@ export default function UserProfileModal({ visible, onClose }) {
           </TouchableOpacity>
 
           <View style={styles.userSection}>
-          <View style={styles.userTextContainer}>
-  {loggedInUser ? (
-    <>
-      <Text style={styles.userName}>
-        {loggedInUser.split(" ")[0]}
-      </Text>
-      <Text style={styles.userLastName}>
-        {loggedInUser.split(" ").slice(1).join(" ")}
-      </Text>
-    </>
-  ) : (
-    <View style={styles.loginContainer}>
-      <Text style={styles.userName}>{t("menu.user")}</Text>
-      <TouchableOpacity onPress={handleLoginNavigation}>
-        <Text style={styles.loginText}>{t("menu.login")}</Text>
-      </TouchableOpacity>
-    </View>
-  )}
-</View>
-
+            <View style={styles.userTextContainer}>
+              {loggedInUser ? (
+                <>
+                  <Text style={styles.userName}>
+                    {loggedInUser.split(" ")[0]}
+                  </Text>
+                  <Text style={styles.userLastName}>
+                    {loggedInUser.split(" ").slice(1).join(" ")}
+                  </Text>
+                </>
+              ) : (
+                <View style={styles.loginContainer}>
+                  <Text style={styles.userName}>{t("menu.user")}</Text>
+                  <TouchableOpacity onPress={handleLoginNavigation}>
+                    <Text style={styles.loginText}>{t("menu.login")}</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
 
             <TouchableOpacity
               onPress={handleLoginNavigation}
@@ -312,7 +316,7 @@ const styles = StyleSheet.create({
     // alignItems: "center",
     justifyContent: "flex-end",
 
-    width:100,
+    width: 100,
   },
   modalContent: {
     position: "absolute",
@@ -344,7 +348,6 @@ const styles = StyleSheet.create({
     marginRight: 6,
     marginTop: 12,
     alignItems: "flex-start",
-  
   },
   userName: {
     fontSize: 20,
@@ -361,7 +364,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#FFA500",
     textAlign: "right", // Align text to the right
-    width: 100, 
+    width: 100,
   },
   userIcon: {
     width: width * 0.15,
@@ -392,8 +395,7 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 16,
     color: "#FFF",
-    marginBottom:20,
-    
+    marginBottom: 20,
   },
   footer: {
     alignItems: "center",
