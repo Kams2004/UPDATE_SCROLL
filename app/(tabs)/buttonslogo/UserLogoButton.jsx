@@ -8,7 +8,7 @@ export default function UserLogoButton({ onPress }) {
   return (
     <TouchableOpacity style={styles.userLogoButton} onPress={onPress}>
       <Image
-        source={require("../../../assets/scrollboxImg/07.png")}
+        source={require("../../../assets/scrollboxImg/23.png")}
         style={styles.userLogo}
       />
     </TouchableOpacity>
@@ -18,12 +18,12 @@ export default function UserLogoButton({ onPress }) {
 const styles = StyleSheet.create({
   userLogoButton: {
     position: "absolute",
-    top: height * 0.04,   
-    right: width * 0.07, 
+    top: height * 0.04,
+    right: width * 0.07,
     zIndex: 2,
   },
   userLogo: {
-    width: width * 0.13, 
+    width: width * 0.13,
     height: width * 0.13,
     resizeMode: "contain",
   },

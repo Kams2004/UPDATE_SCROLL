@@ -19,7 +19,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ApiService from "../../Services/ApiService";
-import { GoogleAuthWebView } from "./GoogleAuthWebView";
+import { GoogleSignUpModal } from "./GoogleAuthWebView";
 
 const { width, height } = Dimensions.get("window");
 
@@ -234,7 +234,9 @@ export default function LoginPage() {
                           autoCapitalize="none"
                           returnKeyType="next"
                           blurOnSubmit={false}
-                          onSubmitEditing={() => passwordInputRef.current?.focus()}
+                          onSubmitEditing={() =>
+                            passwordInputRef.current?.focus()
+                          }
                           autoCorrect={false}
                           spellCheck={false}
                           maxLength={100}
@@ -285,9 +287,10 @@ export default function LoginPage() {
                           </Text>
                         </TouchableOpacity>
                       </View>
-                      {passwordError && (hasBlurredPassword || hasSubmitted) && (
-                        <Text style={styles.errorText}>{passwordError}</Text>
-                      )}
+                      {passwordError &&
+                        (hasBlurredPassword || hasSubmitted) && (
+                          <Text style={styles.errorText}>{passwordError}</Text>
+                        )}
                     </View>
 
                     <TouchableOpacity
@@ -342,7 +345,7 @@ export default function LoginPage() {
             </View>
           </Modal>
 
-          <GoogleAuthWebView
+          <GoogleSignUpModal
             visible={showGoogleAuth}
             onClose={() => setShowGoogleAuth(false)}
             onSuccess={handleGoogleAuthSuccess}

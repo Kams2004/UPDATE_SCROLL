@@ -10,6 +10,7 @@ import {
   FlatList,
   ScrollView,
   Dimensions,
+  TextInput,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -22,27 +23,26 @@ import { useNetInfo } from "@react-native-community/netinfo";
 const { width, height } = Dimensions.get("window");
 
 const ActorPage = () => {
-  const { t } = useTranslation(); // Translation hook
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
   const [characterData, setCharacterData] = useState([]);
+  const [filteredCharacters, setFilteredCharacters] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const netInfo = useNetInfo();
 
   const CHARACTER_STORAGE_KEY = "characterData";
 
   // Fetch character data from AsyncStorage or API
   const fetchCharacterData = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-
-      // Check if data exists in AsyncStorage
       const storedData = await AsyncStorage.getItem(CHARACTER_STORAGE_KEY);
-      if (storedData) {
-        const parsedData = JSON.parse(storedData);
-        setCharacterData(parsedData);
-      }
+      const parsedData = storedData ? JSON.parse(storedData) : [];
+      setCharacterData(parsedData);
+      setFilteredCharacters(parsedData);
 
       // Fetch data from the server if online
       if (netInfo.isConnected) {
@@ -69,20 +69,19 @@ const ActorPage = () => {
                 : null,
           }));
 
-          // Merge new data with existing data
-          const mergedData = mergeCharacterData(characterData, formattedCharacters);
+          setCharacterData(formattedCharacters);
+          setFilteredCharacters(formattedCharacters);
 
-          // Update state and AsyncStorage
-          setCharacterData(mergedData);
           await AsyncStorage.setItem(
             CHARACTER_STORAGE_KEY,
-            JSON.stringify(mergedData)
+            JSON.stringify(formattedCharacters)
           );
 
-          if (mergedData.length > 0) {
-            setSelectedItem(mergedData[0].id);
+          if (formattedCharacters.length > 0) {
+            setSelectedItem(formattedCharacters[0].id);
             setSelectedImage(
-              mergedData[0].image || mergedData[0].fallbackImage
+              formattedCharacters[0].image ||
+                formattedCharacters[0].fallbackImage
             );
           }
         }
@@ -104,6 +103,14 @@ const ActorPage = () => {
   useEffect(() => {
     fetchCharacterData();
   }, [fetchCharacterData]);
+
+  useEffect(() => {
+    setFilteredCharacters(
+      characterData.filter((char) =>
+        char.title.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    );
+  }, [searchQuery, characterData]);
 
   const handleSelect = (item) => {
     if (selectedItem === item.id) {
@@ -163,10 +170,22 @@ const ActorPage = () => {
         resizeMode="cover"
       >
         <View style={styles.flatListContainer}>
+          {/* Left Indicator */}
+          <Image
+            source={require("./../../../assets/scrollboxImg/08.png")}
+            style={[styles.directionIcon, styles.leftIcon]}
+          />
+          <TextInput
+            placeholder="Search character"
+            placeholderTextColor="#ccc"
+            style={styles.searchInput}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
           <FlatList
             style={styles.videosFlatList}
             horizontal
-            data={characterData}
+            data={filteredCharacters}
             renderItem={({ item }) => (
               <RowItem
                 item={item}
@@ -181,6 +200,12 @@ const ActorPage = () => {
             showsHorizontalScrollIndicator={false}
             snapToAlignment="start"
             decelerationRate="fast"
+          />
+
+          {/* Right Indicator */}
+          <Image
+            source={require("./../../../assets/scrollboxImg/08.png")}
+            style={[styles.directionIcon, styles.rightIcon]}
           />
           <LinearGradient
             colors={["transparent", "black"]}
@@ -215,7 +240,6 @@ const RowItem = ({ item, onSelect, selectedId, t }) => {
           source={item.image || item.fallbackImage}
           style={styles.cardImage}
         />
-        <Text style={styles.rowItemText}>{item.title}</Text>
       </TouchableOpacity>
 
       {isSelected && (
@@ -270,14 +294,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   selectedImageBackground: {
-    ...StyleSheet.absoluteFillObject,
     position: "absolute",
-    top: "25.1%",
-    left: 0,
-    right: -150,
-    height: "70%",
-    zIndex: 2,
+    top: height * 0.13,
+    left: width * -0.2,
+    right: 0,
+    width: "150%",
+    height: height * 0.57,
     resizeMode: "contain",
+    zIndex: 1,
   },
   videosFlatList: {
     position: "absolute",
@@ -288,15 +312,45 @@ const styles = StyleSheet.create({
   },
   flatListContainer: {
     position: "absolute",
-    top: height * 0.6,
+    top: height * 0.5,
     bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: "black",
     paddingVertical: height * 0.167,
+    paddingTop: 15,
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
     zIndex: 2,
+  },
+  searchInput: {
+    height: 45,
+    marginHorizontal: 15,
+    paddingHorizontal: 15,
+    backgroundColor: "rgba(128, 128, 128, 0.3)",
+    color: "white",
+    borderRadius: 8,
+    zIndex: 5,
+  },
+  directionIcon: {
+    position: "absolute",
+    width: 25,
+    height: 25,
+    resizeMode: "contain",
+    opacity: 0.9,
+    zIndex: 5,
+  },
+
+  leftIcon: {
+    left: 10,
+    top: "50%",
+    transform: [{ rotate: "0deg" }, { translateY: height * 0.12 }],
+  },
+
+  rightIcon: {
+    right: 10,
+    top: "50%",
+    transform: [{ rotate: "180deg" }, { translateY: -height * 0.12 }],
   },
   flatListContent: {
     paddingHorizontal: 10,
@@ -317,11 +371,11 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   cardImage: {
-    width: "200%",
-    height: "100%",
+    width: width * 0.6,
+    height: height * 0.22,
     position: "absolute",
     top: 20,
-    left: 5,
+    left: 0,
   },
   rowItemText: {
     color: "#fff",

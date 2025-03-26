@@ -12,7 +12,7 @@ import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import LottieView from "lottie-react-native";
 import * as ScreenOrientation from "expo-screen-orientation";
-import { Platform } from "react-native"; // Import Platform to check the environment
+import { Platform } from "react-native";
 
 import UserLogoButton from "./(tabs)/buttonslogo/UserLogoButton";
 import BottomLeftButton from "./(tabs)/buttonslogo/BottomLeftButton";
@@ -27,7 +27,7 @@ export default function HomeScreen() {
 
   // Lock orientation to portrait on component mount
   useEffect(() => {
-    let isMounted = true; // Track if the component is still mounted
+    let isMounted = true;
 
     const lockOrientation = async () => {
       try {
@@ -44,7 +44,7 @@ export default function HomeScreen() {
     lockOrientation();
 
     return () => {
-      isMounted = false; // Prevent async calls after unmount
+      isMounted = false;
       if (Platform.OS !== "web") {
         ScreenOrientation.unlockAsync().catch((error) =>
           console.error("Failed to unlock orientation:", error)
@@ -110,7 +110,7 @@ export default function HomeScreen() {
         }),
       ]),
     ]).start(() => {
-      animationCompleted = true; // Mark animation as completed
+      animationCompleted = true;
       if (animationCompleted) {
         navigation.navigate("SecondHomePage");
       }
@@ -127,7 +127,7 @@ export default function HomeScreen() {
       <Animated.View style={[styles.animatedContainer, animatedStyle]}>
         <Video
           ref={videoRef}
-          source={require("../assets/videos/HomeAnim.mp4")}
+          source={require("../assets/videos/homevideo.mp4")}
           style={styles.backgroundVideo}
           resizeMode="cover"
           isLooping
@@ -147,7 +147,7 @@ export default function HomeScreen() {
               if (modalVisible) {
                 setModalVisible(false);
               }
-            }, 300); // Allow time for modal animation
+            }, 300);
           }}
           style={styles.userLogoButton}
         />
@@ -198,8 +198,8 @@ const styles = StyleSheet.create({
     left: 0,
     bottom: 0,
     right: 0,
-    width: "100%",
-    height: "100%",
+    width: width,
+    height: height,
   },
   backgroundOverlay: {
     position: "absolute",

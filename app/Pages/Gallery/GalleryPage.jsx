@@ -9,11 +9,14 @@ import {
   FlatList,
   Platform,
   Image,
+  Modal,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Loader from "../../../components/Loader";
 import { useNetInfo } from "@react-native-community/netinfo";
+import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
 
 const { width, height } = Dimensions.get("window");
 
@@ -34,7 +37,6 @@ const EnhancedImage = ({ source, style, resizeMode }) => {
     );
   }
 
-  // Dynamically import FastImage to prevent initial load errors
   try {
     const FastImage = require("react-native-fast-image").default;
     return (
@@ -70,36 +72,28 @@ const GalleryPage = () => {
   const [galleryData, setGalleryData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const selectedImageRef = useRef(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
   const navigation = useNavigation();
   const netInfo = useNetInfo();
 
   const GALLERY_STORAGE_KEY = "galleryData";
 
-  // Fetch gallery data from AsyncStorage or API
   const fetchGalleryData = async () => {
     try {
       setLoading(true);
-
-      // Check if data exists in AsyncStorage
       const storedData = await AsyncStorage.getItem(GALLERY_STORAGE_KEY);
       if (storedData) {
         const parsedData = JSON.parse(storedData);
         setGalleryData(parsedData);
       }
-
-      // Fetch data from the server if online
       if (netInfo.isConnected) {
         const response = await fetch(
           "https://q1x8l0qpnb.execute-api.eu-west-3.amazonaws.com/production/api/galleries"
         );
         if (!response.ok) throw new Error("Failed to fetch gallery data");
         const data = await response.json();
-
-        // Merge new data with existing data
         const mergedData = mergeGalleryData(galleryData, data);
-
-        // Update state and AsyncStorage
         setGalleryData(mergedData);
         await AsyncStorage.setItem(
           GALLERY_STORAGE_KEY,
@@ -114,7 +108,6 @@ const GalleryPage = () => {
     }
   };
 
-  // Merge existing gallery data with new data
   const mergeGalleryData = (existingData, newData) => {
     const existingIds = new Set(existingData.map((item) => item._id));
     const uniqueNewData = newData.filter((item) => !existingIds.has(item._id));
@@ -141,6 +134,11 @@ const GalleryPage = () => {
     });
   };
 
+  const openPreview = (uri) => {
+    setPreviewImage(uri);
+    setPreviewVisible(true);
+  };
+
   if (loading) {
     return <Loader visible={loading} />;
   }
@@ -155,9 +153,7 @@ const GalleryPage = () => {
 
   const renderItem = ({ item }) => (
     <View style={styles.card}>
-      <TouchableOpacity
-        onPress={() => (selectedImageRef.current = item.mediaContentUrl)}
-      >
+      <TouchableOpacity onPress={() => openPreview(item.mediaContentUrl)}>
         <EnhancedImage
           source={{ uri: item.mediaContentUrl }}
           style={styles.cardImage}
@@ -219,11 +215,44 @@ const GalleryPage = () => {
         contentContainerStyle={styles.scrollContainer}
         removeClippedSubviews={true}
         initialNumToRender={5}
-        maxToRenderPerBatch={10}
+        maxToRenderPerBatch={5}
         windowSize={7}
         updateCellsBatchingPeriod={50}
         onEndReachedThreshold={0.5}
       />
+
+      {/* Image Preview Modal */}
+      {previewVisible && (
+        <Modal
+          visible={previewVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setPreviewVisible(false)}
+        >
+          <View style={styles.previewOverlay}>
+            <BlurView
+              intensity={100}
+              style={StyleSheet.absoluteFillObject}
+              tint="dark"
+            />
+            <TouchableOpacity
+              style={styles.previewCloseButton}
+              onPress={() => setPreviewVisible(false)}
+            >
+              <Image
+                source={require("./../../../assets/scrollboxImg/09.png")}
+                style={styles.previewCloseIcon}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+            <EnhancedImage
+              source={{ uri: previewImage }}
+              style={styles.previewImage}
+              resizeMode="contain"
+            />
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 };
@@ -277,17 +306,13 @@ const styles = StyleSheet.create({
   card: {
     width: "100%",
     marginBottom: 15,
-    borderRadius: 15,
-    backgroundColor: "rgba(43, 20, 9, 0.8)",
-    borderWidth: 1.5,
-    borderColor: "gray",
-    overflow: "hidden",
+    borderRadius: 10,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    borderBottomWidth: 2,
+    borderBottomColor: "#EF7F1A",
     elevation: 3,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
@@ -330,6 +355,32 @@ const styles = StyleSheet.create({
     textAlign: "right",
     marginTop: 5,
     fontStyle: "italic",
+  },
+  previewOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  previewImage: {
+    width: "90%",
+    height: "80%",
+  },
+  previewCloseButton: {
+    position: "absolute",
+    top: 30,
+    right: 30,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(43, 20, 9, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
+  previewCloseIcon: {
+    width: 20,
+    height: 20,
   },
 });
 

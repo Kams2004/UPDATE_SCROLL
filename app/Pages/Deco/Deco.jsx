@@ -107,10 +107,6 @@ const DicoPage = () => {
     }).start();
   };
 
-  const toggleDropdown = () => {
-    setDropdownVisible((prev) => !prev);
-  };
-
   const handlePageSelection = (page) => {
     setCurrentPage(page);
     setDropdownVisible(false);
@@ -157,7 +153,12 @@ const DicoPage = () => {
         style={styles.backgroundImage}
         resizeMode="cover"
       >
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <ScrollView
+          contentContainerStyle={{
+            ...styles.scrollContainer,
+            paddingBottom: 100,
+          }}
+        >
           {displayedItems.map((item, index) => (
             <View
               key={index}
@@ -172,8 +173,20 @@ const DicoPage = () => {
               >
                 <Text style={styles.listTitle}>{item.term}</Text>
                 <Image
-                  source={require("./../../../assets/scrollboxImg/17.png")}
-                  style={styles.listIcon}
+                  source={
+                    expandedItems[index]
+                      ? require("./../../../assets/scrollboxImg/08-02.png")
+                      : require("./../../../assets/scrollboxImg/08.png")
+                  }
+                  style={[
+                    styles.listIcon,
+                    {
+                      transform: [
+                        { rotate: expandedItems[index] ? "90deg" : "270deg" },
+                      ],
+                    },
+                  ]}
+                  resizeMode="contain"
                 />
               </TouchableOpacity>
               <Animated.View
@@ -298,7 +311,6 @@ const styles = StyleSheet.create({
   listIcon: {
     width: 20,
     height: 20,
-    tintColor: "orange",
   },
   listDescription: {
     marginTop: 10,

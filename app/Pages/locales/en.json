@@ -5,6 +5,12 @@
     "the_kijins": "The KIJINS",
     "experience": "Experience"
   },
+  "mobile_money": {
+    "confirm_phone_number": "Confirm Phone Number",
+    "phone_placeholder": "Enter your phone number",
+    "phone_required": "Phone number is required",
+    "search_country": "Search country"
+  },
   "menu": {
     "logout": "Log out",
     "user": "User",
@@ -74,7 +80,7 @@
     "previous": "Previous",
     "next": "Next",
     "purchase": "Purchase",
-    "download":"download"
+    "download": "download"
   },
   "general": {
     "close": "Close"

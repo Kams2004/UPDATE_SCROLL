@@ -28,11 +28,14 @@ const handleApiError = (error, customMessage) => {
 
 getChapterDownloadUrl: async (chapterId, token) => {
   try {
-    const response = await axios.get(`${BASE_URL}/chapter/download/${chapterId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await axios.get(
+      `${BASE_URL}/chapter/download/${chapterId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
     return response.data.signedUrl;
   } catch (error) {
     console.error("Error getting download URL:", error.message);
@@ -149,17 +152,25 @@ const ApiService = {
   },
   createUser: async (userData) => {
     try {
-      const { name, email, password } = userData; // Ensure only these fields are included
+      const { name, email, password, phoneNumber, phonePrefix } = userData;
 
       console.log("🛠️ Sending API Request with payload:", {
         name,
         email,
         password,
-      }); // Debug log
+        phoneNumber,
+        phonePrefix,
+      }); // Comprehensive debug log
 
       const response = await axios.post(
         `${BASE_URL}/user/create`,
-        { name, email, password },
+        {
+          name,
+          email,
+          password,
+          phoneNumber,
+          phonePrefix,
+        },
         {
           headers: {
             "Content-Type": "application/json",
