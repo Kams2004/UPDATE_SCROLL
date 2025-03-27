@@ -25,6 +25,7 @@ import SecondHomePage from "./Pages/SecondPage/SecondHomePage";
 import ChapterReader from "./Pages/ChapterReader/ChapterReader";
 import ChapterScreen from "./Pages/ChapterScreen/ChapterScreen";
 import UserProfileNavigator from "../app/(tabs)/UserProfileNavigator";
+import PaymentMethodPage from "./Pages/PurchaseModal/PaymentOptionsModal";
 
 // Enable layout animations on Android
 if (
@@ -64,6 +65,7 @@ const AppNavigator = () => (
         freezeOnBlur: true,
       }}
     />
+    <Stack.Screen name="PaymentMethodPage" component={PaymentMethodPage} />
     <Stack.Screen
       name="SecondHomePage"
       component={SecondHomePage}

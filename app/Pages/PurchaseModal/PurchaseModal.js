@@ -7,16 +7,19 @@ import {
   StyleSheet,
   Dimensions,
   Image,
-  TextInput,
   FlatList,
-  ScrollView,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTranslation } from "react-i18next";
+import { useNavigation } from "@react-navigation/native";
+import axios from "axios";
 import ApiService from "../../Services/ApiService";
-import countries from "./../../../constants/countriesList";
 
-const { height, width } = Dimensions.get("window");
+const { height } = Dimensions.get("window");
+
+const DEFAULT_IMAGES = {
+  thumbnail: require("../../../assets/scrollboxImg/06.png"),
+};
 
 const PurchaseModal = ({
   isPurchaseModalVisible,
@@ -32,19 +35,38 @@ const PurchaseModal = ({
   visibleCommentForChapter,
 }) => {
   const { t } = useTranslation();
+  const navigation = useNavigation();
   const [isLoading, setIsLoading] = useState(false);
-  const [userPhone, setUserPhone] = useState({
-    number: "",
-    prefix: "+237",
-    country: { name: "Cameroon", prefix: "+237", flag: "🇨🇲" },
-  });
-  const [countryPickerVisible, setCountryPickerVisible] = useState(false);
-  const [searchText, setSearchText] = useState("");
+  const [userCountry, setUserCountry] = useState(null);
   const cartItemsCount = basket?.length || 0;
 
-  const filteredCountries = countries.filter((country) =>
-    country.name.toLowerCase().includes(searchText.toLowerCase())
-  );
+  // Verify user country on component mount
+  useEffect(() => {
+    const verifyUserCountry = async () => {
+      try {
+        const token = await AsyncStorage.getItem("userToken");
+        const response = await axios.get(
+          "https://q1x8l0qpnb.execute-api.eu-west-3.amazonaws.com/production/api/user/country",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        // Set the verified country code
+        if (response.data && response.data.countryCode) {
+          setUserCountry(response.data.countryCode.toUpperCase());
+        }
+      } catch (error) {
+        console.error("Country Verification Error:", error);
+      }
+    };
+
+    if (isPurchaseModalVisible) {
+      verifyUserCountry();
+    }
+  }, [isPurchaseModalVisible]);
 
   const extractNumericPrice = (price) => {
     if (typeof price === "number") return price;
@@ -88,57 +110,17 @@ const PurchaseModal = ({
       setTotalAmount(newTotalAmount);
     } catch (error) {
       console.error("Error removing from cart:", error.message);
+      showMessage(error.message, "error");
     }
   };
 
-  const handlePayment = async () => {
-    if (!userPhone.number) {
-      showMessage(t("mobile_money.phone_required"), "error");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const token = await AsyncStorage.getItem("userToken");
-      if (!token) {
-        showMessage(t("cart.login_required_proceed"), "error");
-        setIsLoading(false);
-        return;
-      }
-
-      const fullPhoneNumber = userPhone.prefix + userPhone.number;
-      const transactionData = {
-        chapterIds: basket.map((item) => item.id),
-        amount: totalAmount,
-        currency: basket[0]?.currency || "XAF",
-        paymentMethod: "mtnmoney",
-        phoneNumber: fullPhoneNumber,
-      };
-
-      const apiResponse = await ApiService.createTransaction(
-        transactionData,
-        token
-      );
-
-      if (apiResponse?.success) {
-        setIsPurchaseModalVisible(false);
-        setBasket([]);
-        setCartItemsCount(0);
-        setTotalAmount(0);
-      } else {
-        throw new Error(apiResponse?.message || "Transaction failed.");
-      }
-    } catch (error) {
-      console.error("Payment Error:", error.message);
-      showMessage(
-        t("cart.payment_error", {
-          message: error.message || t("cart.payment_default_error"),
-        }),
-        "error"
-      );
-    } finally {
-      setIsLoading(false);
-    }
+  const handleProceedToPayment = () => {
+    // Close the modal and navigate to PaymentMethodPage
+    setIsPurchaseModalVisible(false);
+    navigation.navigate("PaymentMethodPage", {
+      basket: basket,
+      totalAmount: totalAmount,
+    });
   };
 
   const handleClose = () => {
@@ -208,65 +190,6 @@ const PurchaseModal = ({
               style={styles.purchaseModalBasketList}
             />
 
-            <View style={styles.phoneNumberSectionContainer}>
-              <Text style={styles.phoneNumberSectionTitle}>
-                {t("mobile_money.confirm_phone_number")}
-              </Text>
-              <View style={styles.unifiedInputContainer}>
-                <TouchableOpacity
-                  style={styles.prefixContainer}
-                  onPress={() => setCountryPickerVisible(true)}
-                >
-                  <Text style={styles.inputText}>
-                    {userPhone.country.flag} {userPhone.prefix}
-                  </Text>
-                </TouchableOpacity>
-                <TextInput
-                  style={styles.unifiedPhoneInput}
-                  placeholder={t("mobile_money.phone_placeholder")}
-                  placeholderTextColor="#444"
-                  keyboardType="numeric"
-                  value={userPhone.number}
-                  onChangeText={(text) =>
-                    setUserPhone((prev) => ({ ...prev, number: text }))
-                  }
-                />
-              </View>
-
-              {countryPickerVisible && (
-                <View style={styles.countryDropdown}>
-                  <TextInput
-                    style={styles.searchInput}
-                    placeholder={t("mobile_money.search_country")}
-                    placeholderTextColor="#fff"
-                    value={searchText}
-                    onChangeText={setSearchText}
-                  />
-                  <ScrollView style={styles.countryList}>
-                    {filteredCountries.map((country, index) => (
-                      <TouchableOpacity
-                        key={index}
-                        style={styles.countryItem}
-                        onPress={() => {
-                          setUserPhone((prev) => ({
-                            ...prev,
-                            prefix: country.prefix,
-                            country: country,
-                          }));
-                          setCountryPickerVisible(false);
-                          setSearchText("");
-                        }}
-                      >
-                        <Text style={styles.countryText}>
-                          {country.flag} {country.name} {country.prefix}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
-            </View>
-
             <View style={styles.purchaseModalSummaryContainer}>
               <View style={styles.purchaseModalTotalRow}>
                 <Text style={styles.purchaseModalTotalText}>
@@ -282,16 +205,13 @@ const PurchaseModal = ({
             <TouchableOpacity
               style={[
                 styles.purchaseModalBuyButton,
-                (userPhone.number === "" || isLoading) &&
-                  styles.purchaseModalDisabledButton,
+                basket.length === 0 && styles.purchaseModalDisabledButton,
               ]}
-              onPress={handlePayment}
-              disabled={userPhone.number === "" || isLoading}
+              onPress={handleProceedToPayment}
+              disabled={basket.length === 0}
             >
               <Text style={styles.purchaseModalBuyButtonText}>
-                {isLoading
-                  ? t("cart.processing")
-                  : t("cart.proceed_to_checkout")}
+                {t("cart.proceed_to_checkout")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -309,6 +229,31 @@ const PurchaseModal = ({
   );
 };
 
+const FloatingBasketButton = ({
+  cartItemsCount,
+  setIsPurchaseModalVisible,
+  t,
+}) => {
+  if (cartItemsCount === 0) return null;
+
+  return (
+    <TouchableOpacity
+      style={styles.floatingBasketButton}
+      onPress={() => {
+        setIsPurchaseModalVisible(true);
+      }}
+    >
+      <View style={styles.basketButtonContent}>
+        <Text style={styles.basketButtonText}>{t("cart.buy")}</Text>
+      </View>
+      <View style={styles.basketNumberContainer}>
+        <Text style={styles.basketNumber}>{cartItemsCount}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+// Styles remain the same as in the previous code
 const styles = StyleSheet.create({
   purchaseModalOverlay: {
     flex: 1,
@@ -550,33 +495,5 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-
-const DEFAULT_IMAGES = {
-  thumbnail: require("./../../../assets/scrollboxImg/06.png"),
-};
-
-const FloatingBasketButton = ({
-  cartItemsCount,
-  setIsPurchaseModalVisible,
-  t,
-}) => {
-  if (cartItemsCount === 0) return null;
-
-  return (
-    <TouchableOpacity
-      style={styles.floatingBasketButton}
-      onPress={() => {
-        setIsPurchaseModalVisible(true);
-      }}
-    >
-      <View style={styles.basketButtonContent}>
-        <Text style={styles.basketButtonText}>{t("cart.buy")}</Text>
-      </View>
-      <View style={styles.basketNumberContainer}>
-        <Text style={styles.basketNumber}>{cartItemsCount}</Text>
-      </View>
-    </TouchableOpacity>
-  );
-};
 
 export default PurchaseModal;
