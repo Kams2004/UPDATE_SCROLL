@@ -1,22 +1,29 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { Circle } from "react-native-progress";
+// In AnimatedDownloadModal.js
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { Circle } from 'react-native-progress';
 
-const DownloadProgressIndicator = ({ progress, stage }) => {
+const AnimatedDownloadModal = ({ progress, stage, inline = false }) => {
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, inline && styles.inlineContainer]}>
       <View style={styles.content}>
-        <Text style={styles.stageText} numberOfLines={1} ellipsizeMode="tail">
-          {stage}
-        </Text>
+        {stage && (
+          <Text 
+            style={[styles.stageText, inline && styles.inlineStageText]} 
+            numberOfLines={1} 
+            ellipsizeMode="tail"
+          >
+            {stage}
+          </Text>
+        )}
         <Circle
-          size={40} // Smaller size
+          size={inline ? 30 : 60}
           progress={progress / 100}
           showsText={true}
-          formatText={(progress) => `${Math.round(progress * 100)}%`}
+          formatText={(p) => `${Math.round(p * 100)}%`}
           color="#EF7F1A"
-          thickness={4} // Thinner circle
-          textStyle={styles.progressText}
+          thickness={inline ? 3 : 5}
+          textStyle={[styles.progressText, inline && styles.inlineProgressText]}
         />
       </View>
     </View>
@@ -25,29 +32,40 @@ const DownloadProgressIndicator = ({ progress, stage }) => {
 
 const styles = StyleSheet.create({
   container: {
-    position: "absolute",
-    right: 10, // Position near the button
-    bottom: 10, // Position near the button
-    backgroundColor: "rgba(26,26,26,0.9)",
-    borderRadius: 20,
-    padding: 8,
-    zIndex: 10, // Make sure it appears above other elements
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    borderRadius: 10,
+    padding: 20,
+  },
+  inlineContainer: {
+    backgroundColor: 'transparent',
+    padding: 5,
   },
   content: {
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   stageText: {
-    color: "#fff",
-    fontSize: 10, // Smaller text
-    marginBottom: 4,
-    maxWidth: 80, // Limit width
+    color: '#fff',
+    fontSize: 14,
+    marginBottom: 10,
+    textAlign: 'center',
+    maxWidth: 200,
+  },
+  inlineStageText: {
+    fontSize: 10,
+    marginBottom: 5,
+    maxWidth: 100,
   },
   progressText: {
-    color: "#fff",
-    fontSize: 10, // Smaller text
-    fontWeight: "bold",
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  inlineProgressText: {
+    fontSize: 10,
   },
 });
 
-export default DownloadProgressIndicator;
+export default AnimatedDownloadModal;

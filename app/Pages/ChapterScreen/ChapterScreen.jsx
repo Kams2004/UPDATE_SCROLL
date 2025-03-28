@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
-import {
-  isChapterDownloaded,
-  getChapterFilePath,
+import { 
+  isChapterDownloaded, 
+  getChapterFilePath, 
   saveDownloadedChapter,
-} from "../ChapterReader/storageHelpers";
-import DownloadProgressIndicator from "./DownloadProgressIndicator";
+  getChapterDirectory
+} from '../ChapterReader/storageHelpers';
+import * as FileSystem from 'expo-file-system';
+
 import { useRef } from "react";
 import JSZip from "jszip";
 import { Buffer } from "buffer";
@@ -64,8 +66,6 @@ const ChapterScreen = () => {
   const [socialInteractions, setSocialInteractions] = useState(null);
   const [showWebView, setShowWebView] = useState(false);
   const [chapterCommentCounts, setChapterCommentCounts] = useState({});
-
-  const [downloadingChapters, setDownloadingChapters] = useState({});
   const [cartItemsCount, setCartItemsCount] = useState(0);
   const [paymentUrl, setPaymentUrl] = useState(null);
   const [selectedLanguage, setSelectedLanguage] = useState("en");
@@ -80,6 +80,8 @@ const ChapterScreen = () => {
     useState(null);
   const [chapters, setChapters] = useState([]);
   const { t } = useTranslation();
+
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isImageModalVisible, setImageModalVisible] = useState(false);
@@ -98,13 +100,13 @@ const ChapterScreen = () => {
   const [userId, setUserId] = useState(null);
   const [comics, setComics] = useState([]);
   const [user, setuser] = useState([]);
-
-  const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
-  const [currentlyDownloadingChapter, setCurrentlyDownloadingChapter] =
-    useState(null);
-  const [isDownloadingPaused, setIsDownloadingPaused] = useState(false);
-  const downloadResumableRef = useRef(null);
+  const [downloadStatus, setDownloadStatus] = useState(null); 
+  const [isDownloading, setIsDownloading] = useState(false);
+
+const [currentlyDownloadingChapter, setCurrentlyDownloadingChapter] = useState(null);
+const [isDownloadingPaused, setIsDownloadingPaused] = useState(false);
+const downloadResumableRef = useRef(null);
   const [selectedComic, setSelectedComic] = useState(null);
   const [isMessageModalVisible, setIsMessageModalVisible] = useState(false);
   const [messageModalMessage, setMessageModalMessage] = useState("");
@@ -145,56 +147,16 @@ const ChapterScreen = () => {
   useEffect(() => {
     const loadDownloadedChapters = async () => {
       try {
-        const savedChapters = await AsyncStorage.getItem("savedChapters");
+        const savedChapters = await AsyncStorage.getItem('savedChapters');
         if (savedChapters) {
           setDownloadedChapters(new Set(JSON.parse(savedChapters)));
         }
       } catch (error) {
-        console.error("Error loading downloaded chapters:", error);
+        console.error('Error loading downloaded chapters:', error);
       }
     };
     loadDownloadedChapters();
   }, []);
-  const handleDownloadStart = (chapterId) => {
-    setDownloadingChapters((prev) => ({
-      ...prev,
-      [chapterId]: {
-        progress: 0,
-        stage: "Starting download...",
-        isPaused: false,
-      },
-    }));
-  };
-
-  const handleDownloadProgress = (chapterId, progress, stage) => {
-    setDownloadingChapters((prev) => ({
-      ...prev,
-      [chapterId]: {
-        ...prev[chapterId],
-        progress,
-        stage,
-      },
-    }));
-  };
-
-  const handleDownloadComplete = (chapterId) => {
-    setDownloadingChapters((prev) => {
-      const newState = { ...prev };
-      delete newState[chapterId];
-      return newState;
-    });
-    // Update downloaded chapters state
-    setDownloadedChapters((prev) => new Set([...prev, chapterId]));
-  };
-
-  const handleDownloadError = (chapterId, error) => {
-    setDownloadingChapters((prev) => {
-      const newState = { ...prev };
-      delete newState[chapterId];
-      return newState;
-    });
-    showMessage(`Download failed: ${error}`, "error");
-  };
 
   useEffect(() => {
     const fetchComics = async () => {
@@ -524,19 +486,19 @@ const ChapterScreen = () => {
       const zipData = await FileSystem.readAsStringAsync(cbzUri, {
         encoding: FileSystem.EncodingType.Base64,
       });
-
+  
       const zip = new JSZip();
       await zip.loadAsync(zipData, { base64: true });
-
+  
       const validExtensions = /\.(jpg|jpeg|png|webp|gif)$/i;
       const entries = [];
-
+  
       zip.forEach((relativePath, file) => {
         if (!file.dir && validExtensions.test(file.name)) {
           entries.push(file);
         }
       });
-
+  
       entries.sort((a, b) => {
         const getNumber = (str) => {
           const match = str.name.match(/\d+/);
@@ -544,32 +506,29 @@ const ChapterScreen = () => {
         };
         return getNumber(a) - getNumber(b);
       });
-
+  
       if (entries.length === 0) {
         throw new Error("No valid images found in CBZ file");
       }
-
+  
       const extractDir = `${FileSystem.cacheDirectory}extracted_${Date.now()}/`;
       await FileSystem.makeDirectoryAsync(extractDir, { intermediates: true });
-
+  
       const extractedPages = [];
-
+  
       for (let i = 0; i < entries.length; i++) {
         const file = entries[i];
         const data = await file.async("uint8array");
         const base64Data = Buffer.from(data).toString("base64");
-        const newFilename = `${extractDir}${String(i).padStart(
-          3,
-          "0"
-        )}.${file.name.split(".").pop()}`;
-
+        const newFilename = `${extractDir}${String(i).padStart(3, "0")}.${file.name.split('.').pop()}`;
+  
         await FileSystem.writeAsStringAsync(newFilename, base64Data, {
           encoding: FileSystem.EncodingType.Base64,
         });
-
+  
         extractedPages.push({ uri: `file://${newFilename}` });
       }
-
+  
       return extractedPages;
     } catch (error) {
       console.error("Image extraction failed:", error);
@@ -1016,41 +975,39 @@ const ChapterScreen = () => {
       ? DEFAULT_IMAGES.inCart
       : DEFAULT_IMAGES.logo;
 
-    // Determine the button state
-    let buttonState;
-    if (isDownloaded) {
-      buttonState = "READ";
-    } else if (isPurchased || isFirstChapter) {
-      buttonState = "DOWNLOAD";
-    } else {
-      buttonState = "BUY";
-    }
-    const handleButtonPress = async () => {
-      try {
-        switch (buttonState) {
-          case "READ":
-            // Open the downloaded chapter
-            setSelectedChapterForReading(chapter.id);
-            break;
-
-          case "DOWNLOAD":
-            // Download the chapter
-            await handleDownloadClick(chapter.id);
-            break;
-
-          case "BUY":
-            // Add to cart and show purchase modal
-            const addedToCart = await handleAddToCart(chapter.id);
-            if (addedToCart) {
-              setIsPurchaseModalVisible(true);
-            }
-            break;
-        }
-      } catch (error) {
-        console.error("Error handling button press:", error);
-        showMessage("An error occurred. Please try again.", "error");
+     // Determine the button state
+  let buttonState;
+  if (isDownloaded) {
+    buttonState = 'READ';
+  } else if (isPurchased || isFirstChapter) {
+    buttonState = 'DOWNLOAD';
+  } else {
+    buttonState = 'BUY';
+  }
+ 
+  const handleButtonPress = async () => {
+    try {
+      switch (buttonState) {
+        case 'READ':
+          setSelectedChapterForReading(chapter.id);
+          break;
+          
+        case 'DOWNLOAD':
+          await handleDownloadChapter(chapter.id);
+          break;
+          
+        case 'BUY':
+          const addedToCart = await handleAddToCart(chapter.id);
+          if (addedToCart) {
+            setIsPurchaseModalVisible(true);
+          }
+          break;
       }
-    };
+    } catch (error) {
+      console.error("Error handling button press:", error);
+      showMessage("An error occurred. Please try again.", "error");
+    }
+  };
     const getSafeImageSource = (imageUri, defaultImage) => {
       return imageUri && typeof imageUri === "object" && imageUri.uri
         ? imageUri
@@ -1064,46 +1021,128 @@ const ChapterScreen = () => {
     const handleViewClick = async () => {
       await handleViewChapter(chapter.id);
     };
-    const DownloadProgress = ({ progress, isPaused, onTogglePause }) => {
-      const circumference = 2 * Math.PI * 13;
-      const strokeDashoffset = circumference - (progress / 100) * circumference;
+ // Update the DownloadProgress component to show detailed status
+const DownloadProgress = ({ progress, status }) => {
+  const getStatusText = () => {
+    switch (status) {
+      case 'downloading': return 'Downloading...';
+      case 'verifying': return 'Verifying...';
+      case 'extracting': return 'Extracting...';
+      case 'completed': return 'Completed!';
+      case 'failed': return 'Failed';
+      default: return 'Preparing...';
+    }
+  };
 
-      return (
-        <TouchableOpacity
-          onPress={onTogglePause}
-          style={styles.downloadProgressContainer}
-        >
-          {/* Progress circle */}
-          <View style={styles.progressCircle}>
-            <svg width="30" height="30" viewBox="0 0 30 30">
-              <circle
-                cx="15"
-                cy="15"
-                r="13"
-                fill="none"
-                stroke="#EF7F1A"
-                strokeWidth="2"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-              />
-            </svg>
-          </View>
+  return (
+    <View style={styles.downloadProgressContainer}>
+      <View style={styles.progressBarBackground}>
+        <View 
+          style={[
+            styles.progressBarFill,
+            { width: `${progress}%` }
+          ]}
+        />
+      </View>
+      <Text style={styles.downloadStatusText}>
+        {getStatusText()} {Math.round(progress)}%
+      </Text>
+    </View>
+  );
+};
 
-          {/* Pause/Resume icon in center */}
-          {isPaused ? (
-            <Image
-              source={require("./../../../assets/scrollboxImg/ev.png")}
-              style={styles.pauseImage}
-            />
-          ) : (
-            <View style={styles.pauseIcon}>
-              <View style={styles.pauseBar} />
-              <View style={styles.pauseBar} />
-            </View>
-          )}
-        </TouchableOpacity>
-      );
-    };
+    // Add this function to handle download
+const handleDownloadChapter = async (chapterId) => {
+  try {
+    setCurrentlyDownloadingChapter(chapterId);
+    setDownloadStatus('downloading');
+    setDownloadProgress(0);
+
+    // 1. Get user token
+    const token = await AsyncStorage.getItem('token');
+    if (!token) {
+      showMessage('Authentication required', 'error');
+      return;
+    }
+
+    // 2. Prepare download URL and path
+    const downloadUrl = `https://q1x8l0qpnb.execute-api.eu-west-3.amazonaws.com/production/api/chapter/${chapterId}/${selectedLanguage}`;
+    const downloadDir = `${FileSystem.cacheDirectory}downloads/`;
+    const cbzPath = `${downloadDir}${chapterId}.cbz`;
+
+    // Create directory if it doesn't exist
+    await FileSystem.makeDirectoryAsync(downloadDir, { intermediates: true });
+
+    // 3. Start download
+    const downloadResumable = FileSystem.createDownloadResumable(
+      downloadUrl,
+      cbzPath,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/zip',
+        },
+      },
+      (downloadProgress) => {
+        const progress = 
+          (downloadProgress.totalBytesWritten / 
+           downloadProgress.totalBytesExpectedToWrite) * 100;
+        setDownloadProgress(progress);
+      }
+    );
+
+    const { uri } = await downloadResumable.downloadAsync();
+    
+    if (!uri) {
+      throw new Error('Download failed - no URI returned');
+    }
+
+    // 4. Verify downloaded file
+    setDownloadStatus('verifying');
+    const fileInfo = await FileSystem.getInfoAsync(uri);
+    if (!fileInfo.exists || fileInfo.size === 0) {
+      throw new Error('Downloaded file is empty or does not exist');
+    }
+
+    // 5. Extract images (simulating what ChapterReader would do)
+    setDownloadStatus('extracting');
+    const extractedPages = await extractImagesFromCBZ(uri);
+    
+    if (extractedPages.length === 0) {
+      throw new Error('No images extracted from CBZ');
+    }
+
+    // 6. Mark as downloaded in state
+    setDownloadStatus('completed');
+    setDownloadedChapters(prev => new Set([...prev, chapterId]));
+    
+    // Update the chapter state to mark as downloaded
+    setChapters(prevChapters => 
+      prevChapters.map(ch => 
+        ch.id === chapterId ? { ...ch, isDownloaded: true } : ch
+      )
+    );
+
+    showMessage('Chapter downloaded successfully!', 'success');
+    
+    // Automatically open the reader after download
+    setTimeout(() => {
+      setSelectedChapterForReading(chapterId);
+    }, 500);
+
+  } catch (error) {
+    console.error('Download error:', error);
+    setDownloadStatus('failed');
+    showMessage(`Download failed: ${error.message}`, 'error');
+  } finally {
+    setTimeout(() => {
+      setCurrentlyDownloadingChapter(null);
+      setDownloadStatus(null);
+      setDownloadProgress(0);
+    }, 2000);
+  }
+};
+
     const handleReadOrBuyClick = async () => {
       try {
         if (isPurchased || isFirstChapter) {
@@ -1146,62 +1185,185 @@ const ChapterScreen = () => {
 
     const handleDownloadClick = async (chapterId) => {
       try {
-        handleDownloadStart(chapterId);
-
+        console.log(`Starting download for chapter ${chapterId}...`);
+        
+        // Get user token
+        const token = await AsyncStorage.getItem('token');
+        if (!token) {
+          showMessage('Authentication required', 'error');
+          return;
+        }
+    
+        // Set downloading state
+        setIsDownloading(true);
+        setCurrentlyDownloadingChapter(chapterId);
+        setDownloadProgress(0);
+    
+        // Get download URL
         const downloadUrl = `https://q1x8l0qpnb.execute-api.eu-west-3.amazonaws.com/production/api/chapter/${chapterId}/${selectedLanguage}`;
-
-        const downloadDir = `${FileSystem.cacheDirectory}downloads/`;
-        await FileSystem.makeDirectoryAsync(downloadDir, {
+        
+        // Get file path
+        const cbzPath = await getChapterFilePath(chapterId);
+    
+        // Create directories if they don't exist
+        await FileSystem.makeDirectoryAsync(await getChapterDirectory(), {
           intermediates: true,
         });
-        const fileUri = `${downloadDir}${chapterId}_${selectedLanguage}.cbz`;
-
+    
+        // Start download
         const downloadResumable = FileSystem.createDownloadResumable(
           downloadUrl,
-          fileUri,
+          cbzPath,
           {
-            headers: { Authorization: `Bearer ${user.token}` },
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/zip',
+            },
           },
           (downloadProgress) => {
-            const progress =
-              downloadProgress.totalBytesWritten /
-              downloadProgress.totalBytesExpectedToWrite;
-            handleDownloadProgress(chapterId, progress, "Downloading...");
+            const progress = 
+              (downloadProgress.totalBytesWritten / 
+               downloadProgress.totalBytesExpectedToWrite) * 100;
+            setDownloadProgress(progress);
+            console.log(`Download progress: ${Math.round(progress)}%`);
           }
         );
-
+    
         const { uri } = await downloadResumable.downloadAsync();
-
+    
         if (!uri) {
-          throw new Error("Download failed");
+          throw new Error('Download failed - no URI returned');
         }
-
-        // Extract and save chapter
-        await extractAndSaveChapter(uri, chapterId);
-
-        handleDownloadComplete(chapterId);
+    
+        console.log('Download completed, verifying file...');
+        const fileInfo = await FileSystem.getInfoAsync(uri);
+        if (!fileInfo.exists || fileInfo.size === 0) {
+          throw new Error('Downloaded file is empty or does not exist');
+        }
+    
+        // Save download record
+        await saveDownloadedChapter(chapterId);
+        setDownloadedChapters(prev => new Set([...prev, chapterId]));
+    
+        console.log('Chapter download completed successfully');
+        showMessage('Chapter downloaded successfully!', 'success');
+        
+        // Update the chapter state to mark as downloaded
+        setChapters(prevChapters => 
+          prevChapters.map(ch => 
+            ch.id === chapterId ? { ...ch, isDownloaded: true } : ch
+          )
+        );
       } catch (error) {
-        handleDownloadError(chapterId, error.message);
+        console.error('Download error:', error);
+        showMessage(`Download failed: ${error.message}`, 'error');
+      } finally {
+        setIsDownloading(false);
+        setCurrentlyDownloadingChapter(null);
       }
     };
-
+    
+    // Add this validation function
+    const validateCBZFile = async (fileUri) => {
+      try {
+        // Read the first few bytes to check the file signature
+        const header = await FileSystem.readAsStringAsync(fileUri, {
+          encoding: FileSystem.EncodingType.Base64,
+          length: 4,
+          position: 0,
+        });
+        
+        // Check for ZIP file signature (PK..)
+        const signature = Buffer.from(header, 'base64').toString('hex');
+        return signature.startsWith('504b0304') || signature.startsWith('504b0506') || signature.startsWith('504b0708');
+      } catch (error) {
+        console.error('CBZ validation error:', error);
+        return false;
+      }
+    };
+    
+    const extractImagesFromCBZ = async (cbzUri) => {
+      try {
+        setDownloadStatus('extracting');
+        
+        // Read CBZ file
+        const zipData = await FileSystem.readAsStringAsync(cbzUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+    
+        const zip = new JSZip();
+        await zip.loadAsync(zipData, { base64: true });
+    
+        // Filter valid image files
+        const validExtensions = /\.(jpg|jpeg|png|webp|gif)$/i;
+        const entries = [];
+    
+        zip.forEach((relativePath, file) => {
+          if (!file.dir && validExtensions.test(file.name)) {
+            entries.push(file);
+          }
+        });
+    
+        // Sort files by name/number for proper page order
+        entries.sort((a, b) => {
+          const getNumber = (str) => {
+            const match = str.name.match(/\d+/);
+            return match ? parseInt(match[0]) : Infinity;
+          };
+          return getNumber(a) - getNumber(b);
+        });
+    
+        if (entries.length === 0) {
+          throw new Error("No valid images found in CBZ file");
+        }
+    
+        // Create extraction directory
+        const extractDir = `${FileSystem.cacheDirectory}extracted_${Date.now()}/`;
+        await FileSystem.makeDirectoryAsync(extractDir, { intermediates: true });
+    
+        const extractedPages = [];
+    
+        // Extract images with progress updates
+        for (let i = 0; i < entries.length; i++) {
+          const file = entries[i];
+          const progress = (i / entries.length) * 100;
+          setDownloadProgress(50 + (progress / 2)); // Extraction is second half of progress
+    
+          const data = await file.async("uint8array");
+          const base64Data = Buffer.from(data).toString("base64");
+          const newFilename = `${extractDir}${String(i).padStart(3, "0")}.${file.name.split('.').pop()}`;
+    
+          await FileSystem.writeAsStringAsync(newFilename, base64Data, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+    
+          extractedPages.push({ uri: `file://${newFilename}` });
+        }
+    
+        return extractedPages;
+      } catch (error) {
+        console.error("Image extraction failed:", error);
+        throw error;
+      }
+    };
+    
     const handleDownloadComplete = async (chapterId, uri) => {
       try {
         await saveDownloadedChapter(chapterId);
-        setDownloadedChapters((prev) => new Set([...prev, chapterId]));
-
+        setDownloadedChapters(prev => new Set([...prev, chapterId]));
+        
         // Extract the downloaded file
         const pages = await extractImagesFromCBZ(uri);
         if (pages.length > 0) {
-          showMessage("Chapter downloaded successfully!", "success");
+          showMessage('Chapter downloaded successfully!', 'success');
           // Set the chapter for reading automatically
           setSelectedChapterForReading(chapterId);
         } else {
-          throw new Error("Failed to extract chapter content");
+          throw new Error('Failed to extract chapter content');
         }
       } catch (error) {
-        console.error("Download completion error:", error);
-        showMessage("Failed to process downloaded chapter", "error");
+        console.error('Download completion error:', error);
+        showMessage('Failed to process downloaded chapter', 'error');
       }
     };
     const handleAddToBasket = async () => {
@@ -1315,45 +1477,35 @@ const ChapterScreen = () => {
                       </TouchableOpacity>
                     </View>
                     <TouchableOpacity
-                      style={[
-                        styles.readButton,
-                        buttonState === "READ"
-                          ? styles.freeChapterButton
-                          : buttonState === "DOWNLOAD"
-                          ? styles.downloadButton
-                          : styles.paidChapterButton,
-                      ]}
-                      onPress={handleButtonPress}
-                      disabled={
-                        isDownloading &&
-                        currentlyDownloadingChapter !== chapter.id
-                      }
-                    >
-                      {buttonState === "READ" ? (
-                        <Text style={styles.readButtonText}>Read</Text>
-                      ) : buttonState === "DOWNLOAD" ? (
-                        isDownloading &&
-                        currentlyDownloadingChapter === chapter.id ? (
-                          <DownloadProgress
-                            progress={downloadProgress}
-                            isPaused={isDownloadingPaused}
-                            onTogglePause={() =>
-                              handleDownloadClick(chapter.id)
-                            }
-                          />
-                        ) : (
-                          <Image
-                            source={DEFAULT_IMAGES.download}
-                            style={styles.downloadIcon}
-                          />
-                        )
-                      ) : (
-                        <Text style={styles.readButtonText}>Buy</Text>
-                      )}
-                    </TouchableOpacity>
+      style={[
+        styles.readButton,
+        buttonState === 'READ' ? styles.freeChapterButton : 
+        buttonState === 'DOWNLOAD' ? styles.downloadButton : 
+        styles.paidChapterButton,
+      ]}
+      onPress={handleButtonPress}
+      disabled={currentlyDownloadingChapter === chapter.id}
+    >
+      {buttonState === 'READ' ? (
+        <Text style={styles.readButtonText}>Read</Text>
+      ) : buttonState === 'DOWNLOAD' ? (
+        currentlyDownloadingChapter === chapter.id ? (
+          <DownloadProgress 
+            progress={downloadProgress}
+            status={downloadStatus}
+          />
+        ) : (
+          <Image source={DEFAULT_IMAGES.download} style={styles.downloadIcon} />
+        )
+      ) : (
+        <Text style={styles.readButtonText}>Buy</Text>
+      )}
+    </TouchableOpacity>
                   </View>
+
                 </View>
               </View>
+              
             </View>
           ) : (
             <View style={styles.cardContent}>
