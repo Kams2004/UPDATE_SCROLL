@@ -14,7 +14,8 @@ import {
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
   Linking,
-  ImageBackground, // Import ImageBackground
+  ImageBackground,
+  FlatList,
 } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -22,36 +23,44 @@ import { useTranslation } from "react-i18next";
 import ApiService from "../../Services/ApiService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MessageModal from "../MessageModal/MessageModal";
+import { GoogleSignUpModal } from "./GoogleAuthWebView";
+import countries from "../../../constants/countriesList";
 
 const { width, height } = Dimensions.get("window");
 
-export default function SignUpPage() {
+function SignUpPage() {
   const navigation = useNavigation();
   const { t } = useTranslation();
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
 
-  // Refs for input fields
   const nameInputRef = useRef(null);
   const emailInputRef = useRef(null);
   const passwordInputRef = useRef(null);
+  const phoneNumberInputRef = useRef(null);
 
-  // State for Sign Up
   const [name, setName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
 
-  // Error and loading states
   const [nameError, setNameError] = useState("");
+  const [phoneNumberError, setPhoneNumberError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [hasBlurred, setHasBlurred] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
-  // Success Modal
   const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [modalActionType, setModalActionType] = useState("");
+
+  const [isGoogleSignUpModalVisible, setIsGoogleSignUpModalVisible] =
+    useState(false);
+
+  const [selectedCountry, setSelectedCountry] = useState(countries[0]);
+  const [isCountryModalVisible, setIsCountryModalVisible] = useState(false);
 
   const handleCloseModal = () => {
     if (navigation.canGoBack()) {
@@ -61,15 +70,19 @@ export default function SignUpPage() {
     }
   };
 
-  const validateEmail = (email) => {
+  const validateEmail = (emailValue) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
+    return re.test(emailValue);
   };
 
   const validateName = useCallback(
     (nameValue) => {
       if (!nameValue) {
         setNameError(t("signup.error_name_required"));
+        return false;
+      }
+      if (nameValue.length < 2) {
+        setNameError(t("signup.error_name_length"));
         return false;
       }
       setNameError("");
@@ -100,11 +113,27 @@ export default function SignUpPage() {
         setPasswordError(t("signup.error_password_required"));
         return false;
       }
-      if (passwordValue.length <= 7) {
+      if (passwordValue.length < 8) {
         setPasswordError(t("signup.error_password_length"));
         return false;
       }
       setPasswordError("");
+      return true;
+    },
+    [t]
+  );
+
+  const validatePhoneNumber = useCallback(
+    (phoneVal) => {
+      if (!phoneVal) {
+        setPhoneNumberError(t("signup.error_phone_required"));
+        return false;
+      }
+      if (phoneVal.length < 9 || phoneVal.length > 12) {
+        setPhoneNumberError(t("signup.error_phone_invalid"));
+        return false;
+      }
+      setPhoneNumberError("");
       return true;
     },
     [t]
@@ -117,53 +146,106 @@ export default function SignUpPage() {
     const isNameValid = validateName(name);
     const isEmailValid = validateEmailInput(email);
     const isPasswordValid = validatePassword(password);
+    const isPhoneValid = validatePhoneNumber(phoneNumber);
 
     if (!isTermsAccepted) {
       setNameError(t("signup.error_terms"));
       return;
     }
 
-    if (!(isNameValid && isEmailValid && isPasswordValid)) {
+    if (!(isNameValid && isEmailValid && isPasswordValid && isPhoneValid)) {
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Save email to local storage before API call
-      await AsyncStorage.setItem("userEmail", email);
+      // Ensure phone number is cleaned and prefixed with country code
+      const formattedPhoneNumber = `${
+        selectedCountry.prefix
+      }${phoneNumber.replace(/\D/g, "")}`;
 
-      const user = { name, email, password };
+      const user = {
+        name,
+        email,
+        password,
+        phoneNumber: formattedPhoneNumber,
+        countryCode: selectedCountry.code,
+      };
+
+      // Debug log for request payload
+      console.log("🛠️ Signup Request Payload:", {
+        name: user.name,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        countryCode: user.countryCode,
+      });
+
       const response = await ApiService.createUser(user);
 
-      // Handle successful signup with various possible response formats
+      if (response.status === "email_exists") {
+        setSuccessMessage(t("signup.email_exists_message"));
+        setModalActionType("email_exists");
+        setIsSuccessModalVisible(true);
+        return;
+      }
+
       if (
         response?.status === 201 ||
         response?.message?.includes("User created successfully") ||
         response?.message?.includes("OTP")
       ) {
-        // Navigate to OTP Verification Page
+        await AsyncStorage.setItem("userEmail", email);
+        await AsyncStorage.setItem("userCountryCode", selectedCountry.code);
+        await AsyncStorage.setItem("userPhoneNumber", formattedPhoneNumber);
+
         navigation.replace("OTPVerificationPage");
         return;
       }
 
-      // If response doesn't match success conditions
       throw new Error(response?.message || t("signup.signup_error"));
     } catch (error) {
       console.error("Sign-up error:", error);
+
+      // More detailed error logging
+      if (error.response) {
+        console.error("Error Response Data:", error.response.data);
+        console.error("Error Response Status:", error.response.status);
+      }
+
       setSuccessMessage(error.message || t("signup.signup_error"));
+      setModalActionType("error");
       setIsSuccessModalVisible(true);
 
-      // Remove email from storage if signup fails
       await AsyncStorage.removeItem("userEmail");
+      await AsyncStorage.removeItem("userCountryCode");
+      await AsyncStorage.removeItem("userPhoneNumber");
     } finally {
       setIsLoading(false);
     }
-  }, [name, email, password, isTermsAccepted, navigation, t]);
+  }, [
+    name,
+    email,
+    password,
+    phoneNumber,
+    isTermsAccepted,
+    selectedCountry,
+    navigation,
+    t,
+    validateName,
+    validateEmailInput,
+    validatePassword,
+    validatePhoneNumber,
+  ]);
 
   const handleSuccessModalClose = () => {
     setIsSuccessModalVisible(false);
-    navigation.navigate("OTPVerificationPage");
+
+    if (modalActionType === "email_exists") {
+      navigation.navigate("LoginPage");
+    } else {
+      navigation.navigate("Home");
+    }
   };
 
   const navigateToLogin = () => {
@@ -174,12 +256,26 @@ export default function SignUpPage() {
     Linking.openURL("https://scrolbox.com/privacy-policy/");
   };
 
+  const renderCountryItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.countryItem}
+      onPress={() => {
+        setSelectedCountry(item);
+        setIsCountryModalVisible(false);
+      }}
+    >
+      <Text style={styles.countryText}>
+        {item.flag} {item.name} ({item.prefix})
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <ImageBackground
-        source={require("../../../assets/scrollboxImg/02.png")} // Replace with your image path
+        source={require("../../../assets/scrollboxImg/02.png")}
         style={styles.backgroundImage}
-        resizeMode="cover" // Ensure the image covers the entire screen
+        resizeMode="cover"
       >
         <View style={styles.container}>
           <Modal
@@ -204,7 +300,7 @@ export default function SignUpPage() {
                       onPress={handleCloseModal}
                     >
                       <Image
-                        source={require("./../../../assets/scrollboxImg/09.png")}
+                        source={require("../../../assets/scrollboxImg/09.png")}
                         style={styles.closeIcon}
                       />
                     </TouchableOpacity>
@@ -243,11 +339,62 @@ export default function SignUpPage() {
                             validateName(name);
                           }}
                           returnKeyType="next"
-                          onSubmitEditing={() => emailInputRef.current.focus()}
+                          onSubmitEditing={() =>
+                            phoneNumberInputRef.current.focus()
+                          }
                         />
                       </View>
                       {nameError && (hasBlurred || hasSubmitted) && (
                         <Text style={styles.errorText}>{nameError}</Text>
+                      )}
+                    </View>
+
+                    <View style={styles.inputWrapper}>
+                      <View
+                        style={[
+                          styles.phoneContainer,
+                          (hasBlurred || hasSubmitted) &&
+                            phoneNumberError &&
+                            styles.errorBorder,
+                        ]}
+                      >
+                        <TouchableOpacity
+                          style={styles.prefixContainer}
+                          onPress={() => setIsCountryModalVisible(true)}
+                        >
+                          <Text style={styles.prefixText}>
+                            {selectedCountry.prefix}
+                          </Text>
+                          <AntDesign
+                            name="caretdown"
+                            size={14}
+                            color="#EF7F1A"
+                          />
+                        </TouchableOpacity>
+                        <TextInput
+                          ref={phoneNumberInputRef}
+                          style={[styles.input, styles.phoneInput]}
+                          placeholder={t("signup.phone_placeholder")}
+                          placeholderTextColor="#666"
+                          value={phoneNumber}
+                          onChangeText={(text) => {
+                            const formattedText = text.replace(/[^0-9]/g, "");
+                            setPhoneNumber(formattedText);
+                            if (hasBlurred || hasSubmitted) {
+                              validatePhoneNumber(formattedText);
+                            }
+                          }}
+                          onBlur={() => {
+                            setHasBlurred(true);
+                            validatePhoneNumber(phoneNumber);
+                          }}
+                          keyboardType="phone-pad"
+                          returnKeyType="next"
+                          onSubmitEditing={() => emailInputRef.current.focus()}
+                        />
+                      </View>
+                      {phoneNumberError && (hasBlurred || hasSubmitted) && (
+                        <Text style={styles.errorText}>{phoneNumberError}</Text>
                       )}
                     </View>
 
@@ -279,7 +426,9 @@ export default function SignUpPage() {
                           keyboardType="email-address"
                           autoCapitalize="none"
                           returnKeyType="next"
-                          onSubmitEditing={() => passwordInputRef.current.focus()}
+                          onSubmitEditing={() =>
+                            passwordInputRef.current.focus()
+                          }
                         />
                       </View>
                       {emailError && (hasBlurred || hasSubmitted) && (
@@ -333,14 +482,20 @@ export default function SignUpPage() {
                     <View style={styles.termsContainer}>
                       <TouchableOpacity
                         onPress={() => setIsTermsAccepted(!isTermsAccepted)}
-                        style={styles.checkbox}
+                        style={[
+                          styles.checkbox,
+                          !isTermsAccepted && styles.uncheckedTerms,
+                          hasSubmitted &&
+                            !isTermsAccepted &&
+                            styles.errorTermsCheckbox,
+                        ]}
                       >
                         {isTermsAccepted && (
-                          <AntDesign name="check" size={16} color="#FFA500" />
+                          <AntDesign name="check" size={16} color="#EF7F1A" />
                         )}
                       </TouchableOpacity>
                       <Text style={styles.termsText}>
-                        {t("signup.texts")}
+                        {t("signup.terms_text")}
                         <Text
                           style={styles.termsLink}
                           onPress={handleTermsLinkPress}
@@ -349,6 +504,11 @@ export default function SignUpPage() {
                         </Text>
                       </Text>
                     </View>
+                    {hasSubmitted && !isTermsAccepted && (
+                      <Text style={styles.errorText}>
+                        {t("signup.error_terms")}
+                      </Text>
+                    )}
 
                     <TouchableOpacity
                       style={[
@@ -364,6 +524,22 @@ export default function SignUpPage() {
                           : t("signup.signup_button")}
                       </Text>
                     </TouchableOpacity>
+
+                    <View style={styles.signUpWithContainer}>
+                      <Text style={styles.signUpWithText}>
+                        {t("signup.signup_with")}
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.googleButton}
+                        onPress={() => setIsGoogleSignUpModalVisible(true)}
+                      >
+                        <Image
+                          source={require("../../../assets/scrollboxImg/google-removebg.png")}
+                          style={styles.googleIcon}
+                        />
+                      </TouchableOpacity>
+                    </View>
+
                     <TouchableOpacity onPress={navigateToLogin}>
                       <Text style={styles.toggleViewText}>
                         {t("signup.texts_login")}
@@ -384,9 +560,42 @@ export default function SignUpPage() {
           <MessageModal
             visible={isSuccessModalVisible}
             message={successMessage}
-            type="success"
+            type={modalActionType === "email_exists" ? "warning" : "error"}
             onClose={handleSuccessModalClose}
           />
+
+          <GoogleSignUpModal
+            visible={isGoogleSignUpModalVisible}
+            onClose={() => setIsGoogleSignUpModalVisible(false)}
+          />
+
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={isCountryModalVisible}
+            onRequestClose={() => setIsCountryModalVisible(false)}
+          >
+            <View style={styles.countryModalContainer}>
+              <View style={styles.countryModalContent}>
+                <Text style={styles.countryModalTitle}>
+                  {t("signup.select_country")}
+                </Text>
+                <FlatList
+                  data={countries}
+                  keyExtractor={(item) => item.prefix}
+                  renderItem={renderCountryItem}
+                />
+                <TouchableOpacity
+                  style={styles.closeCountryModalBtn}
+                  onPress={() => setIsCountryModalVisible(false)}
+                >
+                  <Text style={styles.closeCountryModalBtnText}>
+                    {t("signup.cancel")}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
         </View>
       </ImageBackground>
     </TouchableWithoutFeedback>
@@ -419,10 +628,12 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   modalContent: {
-    width: width * 0.85,
+    width: width * 0.92,
     backgroundColor: "#1E1E1E",
     borderRadius: 20,
-    padding: 20,
+    padding: 18,
+    paddingLeft: 24,
+    paddingRight: 24,
     alignItems: "center",
     position: "relative",
     shadowColor: "#000",
@@ -446,6 +657,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginVertical: 20,
   },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 1,
+    borderColor: "#666",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  uncheckedTerms: {
+    backgroundColor: "transparent",
+  },
+  errorTermsCheckbox: {
+    borderColor: "#FF0000",
+  },
   userIcon: {
     width: 100,
     height: 100,
@@ -465,9 +691,30 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#666",
+    borderColor: "#EF7F1A",
     borderRadius: 10,
     paddingHorizontal: 10,
+  },
+  phoneContainer: {
+    flexDirection: "row",
+    borderWidth: 1,
+    borderColor: "#EF7F1A",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    alignItems: "center",
+  },
+  prefixContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 8,
+  },
+  prefixText: {
+    color: "#EF7F1A",
+    fontSize: 16,
+    marginRight: 5,
+  },
+  phoneInput: {
+    flex: 1,
   },
   input: {
     flex: 1,
@@ -481,7 +728,7 @@ const styles = StyleSheet.create({
     right: 10,
   },
   passwordVisibilityText: {
-    color: "#FFA500",
+    color: "#EF7F1A",
   },
   errorBorder: {
     borderColor: "#FF0000",
@@ -513,11 +760,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   termsLink: {
-    color: "#FFA500",
+    color: "#EF7F1A",
     textDecorationLine: "underline",
   },
   actionButton: {
-    backgroundColor: "#FFA500",
+    backgroundColor: "#EF7F1A",
     paddingVertical: 15,
     paddingHorizontal: 50,
     borderRadius: 50,
@@ -535,11 +782,69 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   loginLink: {
-    color: "#FFA500",
+    color: "#EF7F1A",
     textDecorationLine: "underline",
     fontSize: 15,
   },
   disabledButton: {
     opacity: 0.7,
   },
+  signUpWithContainer: {
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  signUpWithText: {
+    color: "#999",
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  googleButton: {
+    padding: 10,
+  },
+  googleIcon: {
+    width: 40,
+    height: 40,
+    resizeMode: "contain",
+  },
+  countryModalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  countryModalContent: {
+    width: "80%",
+    backgroundColor: "#1E1E1E",
+    borderRadius: 10,
+    padding: 20,
+  },
+  countryModalTitle: {
+    color: "#FFF",
+    fontSize: 18,
+    marginBottom: 15,
+    alignSelf: "center",
+  },
+  countryItem: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#444",
+  },
+  countryText: {
+    color: "#FFF",
+    fontSize: 16,
+  },
+  closeCountryModalBtn: {
+    alignSelf: "center",
+    marginTop: 15,
+    backgroundColor: "#EF7F1A",
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+  },
+  closeCountryModalBtnText: {
+    color: "#121212",
+    fontWeight: "bold",
+  },
 });
+
+export default SignUpPage;
