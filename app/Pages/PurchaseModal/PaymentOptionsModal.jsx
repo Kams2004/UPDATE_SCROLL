@@ -82,7 +82,7 @@ const PaymentMethodModal = ({
   const { user } = useAuth();
   const [loadingMethod, setLoadingMethod] = useState(null);
   const [showMobileMoneyModal, setShowMobileMoneyModal] = useState(false);
-
+  const [userCountry, setUserCountry] = useState(null);
   const ORIGINAL_PROVIDER_COUNTRIES = ["CI", "ML", "NE", "GW"];
   const isPawapayCountry = !ORIGINAL_PROVIDER_COUNTRIES.includes(userCountry);
   const mobileMoneyMethods = userCountry
