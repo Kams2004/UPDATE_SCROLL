@@ -1532,14 +1532,14 @@ const ChapterScreen = () => {
         <PurchaseModal
           isPurchaseModalVisible={isPurchaseModalVisible}
           setIsPurchaseModalVisible={setIsPurchaseModalVisible}
-          basket={basket} // Ensure basket items are passed correctly
+          basket={basket}
           setBasket={setBasket}
           totalAmount={totalAmount}
           setTotalAmount={setTotalAmount}
           setCartItemsCount={setCartItemsCount}
           showMessage={showMessage}
-          setPaymentLink={setPaymentLink}
           selectedLanguage={selectedLanguage}
+          setPaymentLink={setPaymentLink}
         />
       )}
       {/* WebView for payment */}

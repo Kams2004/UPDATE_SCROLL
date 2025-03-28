@@ -5,81 +5,79 @@ import axios from "axios";
 
 const AuthContext = createContext();
 
-export default AuthProvider = ({ children }) => {
+export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Load user data from AsyncStorage when app starts
-    const loadUserData = async () => {
-      try {
-        const token = await AsyncStorage.getItem("token");
-        const email = await AsyncStorage.getItem("email");
-        const userName = await AsyncStorage.getItem("userName");
-        const userID = await AsyncStorage.getItem("userID");
-        const countryCode = await AsyncStorage.getItem("countryCode");
-        const userRole = await AsyncStorage.getItem("userRole");
+  const loadUserData = async () => {
+    try {
+      const storedData = await AsyncStorage.multiGet([
+        "token",
+        "email",
+        "userName",
+        "userID",
+        "countryCode",
+        "userRole",
+      ]);
 
-        console.log("Stored Data in AsyncStorage:", {
-          token,
-          email,
-          userName,
-          userID,
-          countryCode,
-          userRole,
-        });
+      const data = {
+        token: storedData[0][1],
+        email: storedData[1][1],
+        name: storedData[2][1],
+        id: storedData[3][1],
+        countryCode: storedData[4][1] || "CM", // Default to CM if not set
+        role: storedData[5][1],
+      };
 
-        if (token && userID) {
-          setUser({
-            token,
-            email,
-            name: userName,
-            id: userID,
-            countryCode,
-            role: userRole,
-          });
-        }
-      } catch (error) {
-        console.error("Error loading user data:", error);
-      } finally {
-        setLoading(false);
+      if (data.token && data.id) {
+        setUser(data);
+        console.log("Loaded user data:", data);
       }
-    };
+    } catch (error) {
+      console.error("Error loading user data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadUserData();
   }, []);
 
   // Update the login function to ensure countryCode is properly saved
   const login = async (userData) => {
     try {
-      // Make sure countryCode is included in the stored data
       await AsyncStorage.multiSet([
         ["token", userData.token],
         ["email", userData.email],
         ["userName", userData.name],
         ["userID", userData.id],
-        ["countryCode", userData.countryCode || "CM"], // Default to "CM" if not provided
+        ["countryCode", userData.countryCode || "CM"], // Ensure countryCode is saved
         ["userRole", userData.role],
-        ["loginTime", Date.now().toString()],
       ]);
 
-      // Update context state with the countryCode
       setUser({
-        token: userData.token,
-        email: userData.email,
-        name: userData.name,
-        id: userData.id,
-        countryCode: userData.countryCode || "CM", // Default to "CM"
-        role: userData.role,
+        ...userData,
+        countryCode: userData.countryCode || "CM",
       });
-
       return true;
     } catch (error) {
       console.error("Login error:", error);
       return false;
     }
   };
-
+  const updateCountryCode = async (countryCode) => {
+    try {
+      await AsyncStorage.setItem("countryCode", countryCode);
+      setUser((prev) => ({
+        ...prev,
+        countryCode,
+      }));
+      console.log("Country code updated to:", countryCode);
+    } catch (error) {
+      console.error("Error updating country code:", error);
+    }
+  };
   const logout = async () => {
     try {
       // Clear all AsyncStorage data
@@ -166,9 +164,8 @@ export default AuthProvider = ({ children }) => {
         user,
         loading,
         login,
-        logout,
-        updateUser,
-        refreshUserData,
+        updateCountryCode,
+        // ... other methods
       }}
     >
       {children}

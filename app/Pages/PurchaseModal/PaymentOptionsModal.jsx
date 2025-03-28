@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,344 +6,194 @@ import {
   StyleSheet,
   Modal,
   ActivityIndicator,
-  ScrollView,
-  Alert,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@/app/context/AuthContext";
-import MessageModal from "../MessageModal/MessageModal";
-import WebView from "react-native-webview";
+import MobileMoneyModal from "./MobileMoneyModal";
 
 const COUNTRY_METHODS = {
   CI: ["OMCIV2", "MOMOCI", "FLOOZ", "WAVECI"],
-  BF: ["OMBF"],
+  BF: ["PAWAPAY"],
   ML: ["OMML"],
-  BJ: ["MOMOBJ", "FLOOZBJ"],
   NE: ["AIRTELNG"],
-  SN: ["OMSN"],
   GW: ["OMGN"],
-  CM: ["OMCM"],
+  CM: ["PAWAPAY"],
+  BJ: ["PAWAPAY"],
+  CD: ["PAWAPAY"],
+  GA: ["PAWAPAY"],
+  GH: ["PAWAPAY"],
+  KE: ["PAWAPAY"],
+  MW: ["PAWAPAY"],
+  NG: ["PAWAPAY"],
+  CG: ["PAWAPAY"],
+  RW: ["PAWAPAY"],
+  SN: ["PAWAPAY"],
+  SL: ["PAWAPAY"],
+  TZ: ["PAWAPAY"],
+  UG: ["PAWAPAY"],
+  ZM: ["PAWAPAY"],
 };
 
 const METHOD_LABELS = {
+  PAWAPAY: "Mobile Money",
   OMCIV2: "Orange Money",
   MOMOCI: "MTN",
   FLOOZ: "Moov",
   WAVECI: "Wave",
-  OMBF: "Orange Money",
   OMML: "Orange Money",
-  MOMOBJ: "MTN",
-  FLOOZBJ: "Moov",
-  AIRTELNG: "Airtel",
-  OMSN: "Orange Money",
+  AIRTELNG: "Airtel Money",
   OMGN: "Orange Money",
-  OMCM: "Orange Money",
-  CARD: "Visa / Mastercard",
-  PAYPAL: "PayPal",
 };
 
-const PaymentMethodPage = ({
+const COUNTRY_CODE_MAP = {
+  CI: "ci",
+  BF: "bf",
+  ML: "ml",
+  NE: "ne",
+  GW: "gw",
+  CM: "cm",
+  BJ: "bj",
+  CD: "cd",
+  GA: "ga",
+  GH: "gh",
+  KE: "ke",
+  MW: "mw",
+  NG: "ng",
+  CG: "cg",
+  RW: "rw",
+  SN: "sn",
+  SL: "sl",
+  TZ: "tz",
+  UG: "ug",
+  ZM: "zm",
+};
+
+const PaymentMethodModal = ({
   visible,
   onClose,
   totalPrice,
   currency,
-  onPaymentSuccess,
-  onPaymentError,
+  selectedLanguage = "fr",
+  setPaymentLink,
+  showMessage,
 }) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
-  const [mobileMoneyLoading, setMobileMoneyLoading] = useState(null);
-  const [buyingPaypal, setBuyingPaypal] = useState(false);
-  const [buyingCard, setBuyingCard] = useState(false);
-  const [paymentUrl, setPaymentUrl] = useState(null);
-  const [showPawapayPage, setShowPawapayPage] = useState(false);
-  const [verifiedCountryCode, setVerifiedCountryCode] = useState(null);
-
-  const [isMessageModalVisible, setIsMessageModalVisible] = useState(false);
-  const [messageModalMessage, setMessageModalMessage] = useState("");
-  const [messageModalType, setMessageModalType] = useState("error");
-
-  useEffect(() => {
-    const verifyCountryCode = async () => {
-      try {
-        const storedData = await AsyncStorage.getItem("userData");
-        const parsedData = storedData ? JSON.parse(storedData) : {};
-        const storedCountryCode = parsedData.countryCode?.toUpperCase();
-
-        const contextCountryCode = user?.countryCode?.toUpperCase();
-
-        if (storedCountryCode !== contextCountryCode) {
-          if (contextCountryCode) {
-            const updatedData = {
-              ...parsedData,
-              countryCode: contextCountryCode,
-            };
-            await AsyncStorage.setItem("userData", JSON.stringify(updatedData));
-
-            Alert.alert(
-              "Country Code Updated",
-              `Your country code has been updated to ${contextCountryCode}`
-            );
-          }
-        }
-
-        setVerifiedCountryCode(contextCountryCode || storedCountryCode || "CM");
-      } catch (error) {
-        console.error("Country Code Verification Error:", error);
-        setVerifiedCountryCode("CM");
-      }
-    };
-
-    if (visible) {
-      verifyCountryCode();
-    }
-  }, [visible, user]);
-
-  const handleClose = () => {
-    setPaymentUrl(null);
-    onClose?.();
-  };
-
-  const showErrorMessage = (message) => {
-    setMessageModalMessage(message);
-    setMessageModalType("error");
-    setIsMessageModalVisible(true);
-    onPaymentError?.(message);
-  };
-
-  const closeMessageModal = () => {
-    setIsMessageModalVisible(false);
-  };
-
-  const handleMobileMoneyTransaction = async (methodCode) => {
-    try {
-      if (!user?.token) {
-        showErrorMessage("Authentication required");
-        return;
-      }
-
-      setMobileMoneyLoading(methodCode);
-
-      const res = await axios.post(
-        `https://q1x8l0qpnb.execute-api.eu-west-3.amazonaws.com/production/api/transaction/create/?method=${methodCode}`,
-        {},
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      );
-
-      const { url } = res.data;
-      if (url) {
-        setPaymentUrl(url);
-        onPaymentSuccess?.(methodCode);
-      } else {
-        showErrorMessage("Unable to process transaction");
-      }
-    } catch (error) {
-      console.error(`${methodCode} Transaction Error:`, error);
-      showErrorMessage("Mobile Money transaction failed");
-    } finally {
-      setMobileMoneyLoading(null);
-    }
-  };
-
-  const handlePawapayMobileMoney = async () => {
-    try {
-      if (!user?.token) {
-        showErrorMessage("Authentication required");
-        return;
-      }
-
-      setMobileMoneyLoading("PAWAPAY");
-
-      const res = await axios.post(
-        "https://q1x8l0qpnb.execute-api.eu-west-3.amazonaws.com/production/api/transaction/create/pawapay",
-        {},
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      );
-
-      const { url } = res.data;
-      if (url) {
-        setPaymentUrl(url);
-        onPaymentSuccess?.("PAWAPAY");
-      } else {
-        showErrorMessage("Unable to process Pawapay transaction");
-      }
-    } catch (error) {
-      console.error("Pawapay Transaction Error:", error);
-      showErrorMessage("Pawapay transaction failed");
-    } finally {
-      setMobileMoneyLoading(null);
-    }
-  };
-
-  const handlePaypalTransaction = async () => {
-    try {
-      if (!user?.token) {
-        showErrorMessage("Authentication required");
-        return;
-      }
-
-      setBuyingPaypal(true);
-
-      const res = await axios.post(
-        "https://q1x8l0qpnb.execute-api.eu-west-3.amazonaws.com/production/api/transaction/create/?method=paypal",
-        {},
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      );
-
-      const { url } = res.data;
-      if (url) {
-        setPaymentUrl(url);
-        onPaymentSuccess?.("paypal");
-      } else {
-        showErrorMessage("Unable to process PayPal transaction");
-      }
-    } catch (error) {
-      console.error("PayPal Transaction Error:", error);
-      showErrorMessage("PayPal transaction failed");
-    } finally {
-      setBuyingPaypal(false);
-    }
-  };
-
-  const handleCardTransaction = async () => {
-    try {
-      if (!user?.token) {
-        showErrorMessage("Authentication required");
-        return;
-      }
-
-      setBuyingCard(true);
-
-      const res = await axios.post(
-        "https://q1x8l0qpnb.execute-api.eu-west-3.amazonaws.com/production/api/transaction/create/?method=card",
-        {},
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      );
-
-      const { url } = res.data;
-      if (url) {
-        setPaymentUrl(url);
-        onPaymentSuccess?.("card");
-      } else {
-        showErrorMessage("Unable to process card transaction");
-      }
-    } catch (error) {
-      console.error("Card Transaction Error:", error);
-      showErrorMessage("Card transaction failed");
-    } finally {
-      setBuyingCard(false);
-    }
-  };
-
-  const styles = StyleSheet.create({
-    modalContainer: {
-      flex: 1,
-      justifyContent: "flex-end",
-      backgroundColor: "rgba(0,0,0,0.5)",
-    },
-    modalContent: {
-      backgroundColor: "white",
-      borderTopLeftRadius: 15,
-      borderTopRightRadius: 15,
-      padding: 20,
-      maxHeight: "80%",
-    },
-    webViewContainer: {
-      flex: 1,
-      width: "100%",
-      height: "100%",
-    },
-    header: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 20,
-    },
-    headerTitle: {
-      fontSize: 24,
-      color: "#333",
-      fontWeight: "bold",
-    },
-    closeButton: {
-      color: "#007bff",
-      fontSize: 18,
-    },
-    amountText: {
-      textAlign: "center",
-      fontSize: 18,
-      marginBottom: 30,
-      color: "#666",
-    },
-    paymentOptions: {
-      gap: 15,
-    },
-    paymentButton: {
-      padding: 15,
-      backgroundColor: "#007bff",
-      borderRadius: 5,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    paymentButtonDisabled: {
-      backgroundColor: "#cccccc",
-    },
-    paymentButtonText: {
-      color: "white",
-      textAlign: "center",
-      fontSize: 16,
-    },
-    loader: {
-      alignSelf: "center",
-    },
-  });
+  const [loadingMethod, setLoadingMethod] = useState(null);
+  const [showMobileMoneyModal, setShowMobileMoneyModal] = useState(false);
 
   const ORIGINAL_PROVIDER_COUNTRIES = ["CI", "ML", "NE", "GW"];
+  const isPawapayCountry = !ORIGINAL_PROVIDER_COUNTRIES.includes(userCountry);
+  const mobileMoneyMethods = userCountry
+    ? COUNTRY_METHODS[userCountry] || []
+    : [];
 
-  const isPawapayCountry = Object.keys(COUNTRY_METHODS)
-    .filter((key) => !ORIGINAL_PROVIDER_COUNTRIES.includes(key))
-    .some(
-      (key) =>
-        COUNTRY_METHODS[key].includes("PAWAPAY") && key === verifiedCountryCode
-    );
+  const handleMobileMoneyPayment = async (methodCode) => {
+    if (!user?.token) {
+      showMessage(t("errors.authentication_required"), "error");
+      return;
+    }
 
-  const mobileMoneyMethods = COUNTRY_METHODS[verifiedCountryCode] || [];
+    setLoadingMethod(methodCode);
 
-  if (paymentUrl) {
-    return (
-      <Modal transparent={false} visible={true} animationType="slide">
-        <View style={styles.webViewContainer}>
-          <TouchableOpacity
-            onPress={handleClose}
-            style={{
-              position: "absolute",
-              top: 40,
-              right: 20,
-              zIndex: 1000,
-            }}
-          >
-            <Text style={styles.closeButton}>Close</Text>
-          </TouchableOpacity>
-          <WebView
-            source={{ uri: paymentUrl }}
-            style={styles.webViewContainer}
-            javaScriptEnabled={true}
-            domStorageEnabled={true}
-            startInLoadingState={true}
-            scalesPageToFit={true}
-          />
-        </View>
-      </Modal>
-    );
-  }
+    try {
+      const res = await axios.post(
+        `https://q1x8l0qpnb.execute-api.eu-west-3.amazonaws.com/production/api/transaction/create/?method=${methodCode}&lang=${
+          selectedLanguage || "fr"
+        }`,
+        {},
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
 
-  if (showPawapayPage) {
-    return (
-      <MobileMoneyPage
-        onClose={() => setShowPawapayPage(false)}
-        isPawapay={true}
-      />
-    );
-  }
+      const { url } = res.data;
+      if (url) {
+        setPaymentLink(url);
+      } else {
+        throw new Error("No payment URL returned");
+      }
+    } catch (error) {
+      console.error("Mobile Money Payment Error:", error);
+      showMessage(
+        error.response?.data?.message || t("errors.payment_failed"),
+        "error"
+      );
+    } finally {
+      setLoadingMethod(null);
+    }
+  };
+
+  const handlePawapayPayment = () => {
+    setShowMobileMoneyModal(true);
+  };
+
+  const handlePayPalPayment = async () => {
+    if (!user?.token) {
+      showMessage(t("errors.authentication_required"), "error");
+      return;
+    }
+
+    setLoadingMethod("PAYPAL");
+
+    try {
+      const res = await axios.post(
+        `https://q1x8l0qpnb.execute-api.eu-west-3.amazonaws.com/production/api/transaction/create/?method=PAYPAL&lang=${
+          selectedLanguage || "fr"
+        }`,
+        {},
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+
+      const { url } = res.data;
+      if (url) {
+        setPaymentLink(url);
+      } else {
+        throw new Error("No payment URL returned");
+      }
+    } catch (error) {
+      console.error("PayPal Payment Error:", error);
+      showMessage(
+        error.response?.data?.message || t("errors.payment_failed"),
+        "error"
+      );
+    } finally {
+      setLoadingMethod(null);
+    }
+  };
+
+  const handleCardPayment = async () => {
+    if (!user?.token) {
+      showMessage(t("errors.authentication_required"), "error");
+      return;
+    }
+
+    setLoadingMethod("CARD");
+
+    try {
+      const res = await axios.post(
+        `https://q1x8l0qpnb.execute-api.eu-west-3.amazonaws.com/production/api/transaction/create/?method=CARD&lang=${
+          selectedLanguage || "fr"
+        }`,
+        {},
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+
+      const { url } = res.data;
+      if (url) {
+        setPaymentLink(url);
+      } else {
+        throw new Error("No payment URL returned");
+      }
+    } catch (error) {
+      console.error("Card Payment Error:", error);
+      showMessage(
+        error.response?.data?.message || t("errors.payment_failed"),
+        "error"
+      );
+    } finally {
+      setLoadingMethod(null);
+    }
+  };
 
   return (
     <>
@@ -351,112 +201,158 @@ const PaymentMethodPage = ({
         transparent={true}
         visible={visible}
         animationType="slide"
-        onRequestClose={handleClose}
+        onRequestClose={onClose}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.header}>
-              <Text style={styles.headerTitle}>Select Payment Method</Text>
-              <TouchableOpacity onPress={handleClose}>
-                <Text style={styles.closeButton}>Close</Text>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{t("payment.title")}</Text>
+              <TouchableOpacity onPress={onClose}>
+                <Text style={styles.closeButton}>{t("general.close")}</Text>
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.amountText}>
-              Total: {totalPrice} {currency}
+            <Text style={styles.paymentAmount}>
+              {t("payment.totalLabel")} {extractNumericPrice(totalPrice)}{" "}
+              {currency}
             </Text>
 
-            <ScrollView style={styles.paymentOptions}>
-              {ORIGINAL_PROVIDER_COUNTRIES.includes(verifiedCountryCode) &&
-                mobileMoneyMethods.map((methodCode) => {
-                  const friendlyLabel = METHOD_LABELS[methodCode] || methodCode;
-                  return (
-                    <TouchableOpacity
-                      key={methodCode}
-                      style={[
-                        styles.paymentButton,
-                        mobileMoneyLoading === methodCode &&
-                          styles.paymentButtonDisabled,
-                      ]}
-                      onPress={() => handleMobileMoneyTransaction(methodCode)}
-                      disabled={mobileMoneyLoading === methodCode}
-                    >
-                      {mobileMoneyLoading === methodCode ? (
-                        <ActivityIndicator
-                          color="white"
-                          style={styles.loader}
-                        />
-                      ) : (
-                        <Text style={styles.paymentButtonText}>
-                          {friendlyLabel}
-                        </Text>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-
-              {isPawapayCountry && (
+            <View style={styles.paymentOptions}>
+              {ORIGINAL_PROVIDER_COUNTRIES.includes(userCountry) ? (
+                mobileMoneyMethods.map((method) => (
+                  <TouchableOpacity
+                    key={method}
+                    style={styles.paymentButton}
+                    onPress={() => handleMobileMoneyPayment(method)}
+                    disabled={loadingMethod === method}
+                  >
+                    {loadingMethod === method ? (
+                      <ActivityIndicator color="white" />
+                    ) : (
+                      <Text style={styles.paymentButtonText}>
+                        {METHOD_LABELS[method] || method}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                ))
+              ) : isPawapayCountry ? (
                 <TouchableOpacity
-                  style={[
-                    styles.paymentButton,
-                    mobileMoneyLoading === "PAWAPAY" &&
-                      styles.paymentButtonDisabled,
-                  ]}
-                  onPress={handlePawapayMobileMoney}
-                  disabled={mobileMoneyLoading === "PAWAPAY"}
+                  style={styles.paymentButton}
+                  onPress={handlePawapayPayment}
                 >
-                  {mobileMoneyLoading === "PAWAPAY" ? (
-                    <ActivityIndicator color="white" style={styles.loader} />
-                  ) : (
-                    <Text style={styles.paymentButtonText}>Mobile Money</Text>
-                  )}
+                  <Text style={styles.paymentButtonText}>
+                    {t("payment.mobileMoney")}
+                  </Text>
                 </TouchableOpacity>
-              )}
+              ) : null}
 
               <TouchableOpacity
-                style={[
-                  styles.paymentButton,
-                  buyingPaypal && styles.paymentButtonDisabled,
-                ]}
-                onPress={handlePaypalTransaction}
-                disabled={buyingPaypal}
+                style={styles.paymentButton}
+                onPress={handlePayPalPayment}
+                disabled={loadingMethod === "PAYPAL"}
               >
-                {buyingPaypal ? (
-                  <ActivityIndicator color="white" style={styles.loader} />
-                ) : (
-                  <Text style={styles.paymentButtonText}>PayPal</Text>
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.paymentButton,
-                  buyingCard && styles.paymentButtonDisabled,
-                ]}
-                onPress={handleCardTransaction}
-                disabled={buyingCard}
-              >
-                {buyingCard ? (
-                  <ActivityIndicator color="white" style={styles.loader} />
+                {loadingMethod === "PAYPAL" ? (
+                  <ActivityIndicator color="white" />
                 ) : (
                   <Text style={styles.paymentButtonText}>
-                    Visa / Mastercard
+                    {t("payment.paypal")}
                   </Text>
                 )}
               </TouchableOpacity>
-            </ScrollView>
+
+              <TouchableOpacity
+                style={styles.paymentButton}
+                onPress={handleCardPayment}
+                disabled={loadingMethod === "CARD"}
+              >
+                {loadingMethod === "CARD" ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text style={styles.paymentButtonText}>
+                    {t("payment.creditCard")}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
 
-      <MessageModal
-        visible={isMessageModalVisible}
-        message={messageModalMessage}
-        type={messageModalType}
-        onClose={closeMessageModal}
+      <MobileMoneyModal
+        visible={showMobileMoneyModal}
+        onClose={() => setShowMobileMoneyModal(false)}
+        isPawapay={isPawapayCountry}
+        totalPrice={totalPrice}
+        currency={currency}
+        selectedLanguage={selectedLanguage}
+        setPaymentLink={setPaymentLink}
+        showMessage={showMessage}
       />
     </>
   );
 };
 
-export default PaymentMethodPage;
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContainer: {
+    width: "100%",
+    height: "70%",
+    backgroundColor: "white",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  closeButton: {
+    fontSize: 16,
+    color: "#EF7F1A",
+  },
+  paymentAmount: {
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 20,
+    color: "#333",
+  },
+  paymentOptions: {
+    gap: 15,
+  },
+  paymentButton: {
+    backgroundColor: "#EF7F1A",
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  paymentButtonText: {
+    color: "white",
+    fontWeight: "bold",
+  },
+});
+
+const extractNumericPrice = (price) => {
+  if (typeof price === "number") return price;
+  if (typeof price === "string") {
+    const numericValue = parseFloat(price.replace(/[^\d.]/g, ""));
+    return isNaN(numericValue) ? 0 : numericValue;
+  }
+  if (price && typeof price === "object" && price.value !== undefined) {
+    return extractNumericPrice(price.value);
+  }
+  return 0;
+};
+
+export default PaymentMethodModal;
