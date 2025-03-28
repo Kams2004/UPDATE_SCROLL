@@ -31,15 +31,82 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   downloadProgressContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 40,
+    height: 40,
+  },
+  progressCircleTouchable: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   downloaddownloadSpinner: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  progressCircle: {
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  progressCircleIndicator: {
+    position: 'absolute',
+    transform: [{ rotate: '-90deg' }],
+  },
+  progressCircleBackground: {
+    position: 'absolute',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 2,
+    borderColor: 'rgba(239, 127, 26, 0.3)',
+  },
+  progressText: {
+    color: '#fff',
+    fontSize: 10,
+  },
+  pauseImage: {
+    width: 20,
+    height: 20,
+    tintColor: '#fff',
+  },
+  pauseIcon: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: 12,
+    height: 12,
+  },
+  playTriangle: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderLeftWidth: 8,
+    borderRightWidth: 0,
+    borderBottomWidth: 5,
+    borderTopWidth: 5,
+    borderLeftColor: '#EF7F1A',
+    borderRightColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderTopColor: 'transparent',
+  },
+  playIcon: {
+    width: 12,
+    height: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 2,
+  },
+  pauseBar: {
+    width: 3,
+    height: 12,
+    backgroundColor: '#EF7F1A',
   },
   downloadIcon: {
     width: 20,
@@ -72,44 +139,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-  // Add these to your existing styles
-  downloadProgressContainer: {
-    width: 30,
-    height: 30,
-    justifyContent: "center",
-    alignItems: "center",
-    position: "relative",
-  },
-  progressCircle: {
-    position: "absolute",
-    transform: [{ rotate: "-90deg" }], // Start from top
-  },
-  pauseIcon: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    width: "100%",
-    height: "100%",
-  },
-  pauseImage: {
-    width: 15,
-    height: 15,
-    resizeMode: "contain",
-    tintColor: "#FFFFFF",
-  },
-  pauseBar: {
-    width: 3,
-    height: 12,
-    backgroundColor: "#FFFFFF",
-    marginHorizontal: 1,
-  },
-  // In your styles
-  downloadIcon: {
-    width: 20, // Reduced width
-    height: 23.5, // Reduced height
-    resizeMode: "stretch",
-    tintColor: "#FFFFFF",
-  },
+ 
+ 
   paymentMethodTitle: {
     fontSize: 16,
     fontWeight: "600",
@@ -359,13 +390,7 @@ const styles = StyleSheet.create({
   progressControlIcon: {
     color: "#FFFFFF",
   },
-  downloadProgressContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    paddingHorizontal: 5,
-  },
+ 
   progressBarBackground: {
     height: 4,
     backgroundColor: "rgba(255,255,255,0.3)",
@@ -769,12 +794,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 50,
   },
-  downloadProgressContainer: {
-    justifyContent: "center",
-    alignItems: "center",
-    width: 80,
-    height: 40,
-  },
+  
   downloadProgress: {
     width: 20,
     height: 20,

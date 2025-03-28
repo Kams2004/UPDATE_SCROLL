@@ -1,5 +1,6 @@
 // storageHelpers.js
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from 'expo-file-system';
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import JSZip from "jszip";
 import { Buffer } from "buffer";
@@ -16,8 +17,8 @@ export const getChapterFilePath = async (chapterId) => {
 };
 
 export const getChapterExtractPath = async (chapterId) => {
-  const dir = await getChapterDirectory();
-  return `${dir}extracted/${chapterId}/`;
+  const chapterDir = await getChapterDirectory();
+  return `${chapterDir}/${chapterId}_extracted/`;
 };
 
 export const isChapterDownloaded = async (chapterId) => {
@@ -65,9 +66,7 @@ export const extractImagesFromCBZ = async (cbzUri, chapterId) => {
 
     // Load with JSZip
     const zip = new JSZip();
-    const arrayBuffer = Uint8Array.from(
-      Buffer.from(base64Data, "base64")
-    ).buffer;
+    const arrayBuffer = Uint8Array.from(Buffer.from(base64Data, "base64")).buffer;
     await zip.loadAsync(arrayBuffer);
 
     // Filter and sort image files
@@ -87,14 +86,12 @@ export const extractImagesFromCBZ = async (cbzUri, chapterId) => {
       throw new Error("No valid images found in CBZ file");
     }
 
-    // Extract images
+    // Extract images with consistent naming
     const extractedPages = [];
     for (let i = 0; i < imageFiles.length; i++) {
       const file = imageFiles[i];
       const fileData = await file.async("uint8array");
-      const fileName = `${String(i).padStart(3, "0")}.${file.name
-        .split(".")
-        .pop()}`;
+      const fileName = `page_${String(i).padStart(3, "0")}.${file.name.split(".").pop()}`;
       const filePath = `${extractDir}${fileName}`;
 
       await FileSystem.writeAsStringAsync(
