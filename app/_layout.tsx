@@ -17,6 +17,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as SplashScreen from "expo-splash-screen";
+import AuthProvider from "./context/AuthContext";
 // import NetworkErrorModal from "./Pages/NetworkErrorModal/NetworkErrorModal";
 
 // Import screens
@@ -285,7 +286,9 @@ function RootLayout() {
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={styles.root} onLayout={onLayoutRootView}>
-        <AppNavigator />
+        <AuthProvider>
+          <AppNavigator />
+        </AuthProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
   );

@@ -21,6 +21,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import ApiService from "../../Services/ApiService";
 import { GoogleAuthWebView } from "./GoogleAuthWebView";
 import axios from "axios";
+import { useAuth } from "@/app/context/AuthContext";
 const { width, height } = Dimensions.get("window");
 
 export default function LoginPage() {
@@ -38,6 +39,7 @@ export default function LoginPage() {
   const [hasBlurredPassword, setHasBlurredPassword] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [showGoogleAuth, setShowGoogleAuth] = useState(false);
+  const { login } = useAuth();
 
   // Refs
   const emailInputRef = useRef(null);
@@ -144,45 +146,24 @@ export default function LoginPage() {
       const { token } = response;
 
       if (token) {
-        // Fetch user details using the specific API
         const userResponse = await axios.get(
           "https://q1x8l0qpnb.execute-api.eu-west-3.amazonaws.com/production/api/user",
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           }
         );
 
         const userData = userResponse.data.user;
 
-        // Log user details for debugging
-        console.log("===== User Details =====");
-        console.log("User ID:", userData._id);
-        console.log("Name:", userData.name);
-        console.log("Email:", userData.email);
-        console.log("Role:", userData.role);
-        console.log("Currency:", userData.currency);
-        console.log("Verified:", userData.verified);
-        console.log("Country Code:", userData.countryCode);
-        console.log("Created At:", userData.createdAt);
-        console.log("=======================");
-
-        // Store user data in AsyncStorage
-        await AsyncStorage.setItem("token", token);
-        await AsyncStorage.setItem("email", userData.email);
-        await AsyncStorage.setItem("userName", userData.name);
-        await AsyncStorage.setItem("userID", userData._id);
-        await AsyncStorage.setItem("countryCode", userData.countryCode);
-        await AsyncStorage.setItem("userRole", userData.role);
-        await AsyncStorage.setItem("loginTime", Date.now().toString());
-
-        // Additional optional storage
-        await AsyncStorage.setItem("currency", userData.currency);
-        await AsyncStorage.setItem("verified", userData.verified.toString());
-
-        // Log the stored data for verification
-        await logStoredData();
+        // Use the auth context login function instead of direct AsyncStorage
+        await login({
+          token,
+          email: userData.email,
+          name: userData.name,
+          id: userData._id,
+          countryCode: userData.countryCode || "CM",
+          role: userData.role,
+        });
 
         navigation.reset({
           index: 0,
@@ -194,7 +175,6 @@ export default function LoginPage() {
     } catch (error) {
       console.error("Login Error:", error);
 
-      // More detailed error logging
       if (error.response) {
         console.error("Error response data:", error.response.data);
         console.error("Error response status:", error.response.status);
@@ -213,7 +193,7 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [email, password, navigation, t]);
+  }, [email, password, navigation, t, login]);
 
   const handleCloseModal = () => {
     if (navigation.canGoBack()) {
