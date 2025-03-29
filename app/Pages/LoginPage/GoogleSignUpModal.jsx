@@ -11,6 +11,7 @@ import {
 import { WebView } from "react-native-webview";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function GoogleSignUpModal({
   visible,
@@ -22,9 +23,13 @@ export default function GoogleSignUpModal({
   const [error, setError] = useState("");
   const [authResult, setAuthResult] = useState(null);
   const [showWebView, setShowWebView] = useState(false);
+  const [showCountrySelector, setShowCountrySelector] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState(null);
+  const [countryOptions, setCountryOptions] = useState([]);
+  const [token, setToken] = useState(null);
   const webViewRef = useRef(null);
 
-  // URL for Google auth
+  // URL for Google auth - matches web implementation
   const googleAuthURL =
     "https://q1x8l0qpnb.execute-api.eu-west-3.amazonaws.com/production/api/google";
 
@@ -34,6 +39,28 @@ export default function GoogleSignUpModal({
       handleGoogleLogin();
     }
   }, [visible]);
+
+  // Fetch country list on component mount
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        // This would ideally come from your API or a static list
+        const countries = [
+          { label: "United States", value: "us" },
+          { label: "United Kingdom", value: "gb" },
+          { label: "Canada", value: "ca" },
+          { label: "France", value: "fr" },
+          { label: "Germany", value: "de" },
+          // Add more countries as needed
+        ];
+        setCountryOptions(countries);
+      } catch (error) {
+        console.error("Failed to fetch countries:", error);
+      }
+    };
+
+    fetchCountries();
+  }, []);
 
   const handleGoogleLogin = () => {
     setIsLoading(true);
@@ -50,47 +77,35 @@ export default function GoogleSignUpModal({
       try {
         // Parse the URL to extract token
         const urlObj = new URL(url);
-        const token = urlObj.searchParams.get("token");
+        const extractedToken = urlObj.searchParams.get("token");
 
-        if (token) {
+        if (extractedToken) {
           setShowWebView(false);
           setIsLoading(true);
+          setToken(extractedToken);
 
           // Fetch user data using the token
           const res = await axios.get(
             "https://q1x8l0qpnb.execute-api.eu-west-3.amazonaws.com/production/api/user",
-            { headers: { Authorization: `Bearer ${token}` } }
+            { headers: { Authorization: `Bearer ${extractedToken}` } }
           );
 
           const userName = res?.data?.user?.name;
           const userID = res?.data?.user?._id;
+          const userCountryCode = res?.data?.user?.countryCode;
 
           if (!userName || !userID) {
             throw new Error("Incomplete user data received");
           }
 
-          const userData = {
-            name: userName,
-            token,
-            loginTime: Date.now(),
-            userID,
-          };
-
-          // Store the user data
-          await AsyncStorage.setItem("userData", JSON.stringify(userData));
-          setAuthResult("success");
-
-          // Call success handler if provided
-          if (onSuccess) {
-            onSuccess();
+          if (!userCountryCode) {
+            // Show country selector if country code is missing
+            setShowCountrySelector(true);
+            setIsLoading(false);
+          } else {
+            // Complete the login process
+            completeLogin(extractedToken, userName, userID, userCountryCode);
           }
-
-          // Close modal after a short delay to show the success state
-          setTimeout(() => {
-            onClose();
-            // Navigate to appropriate screen after successful login
-            navigation.replace("Home");
-          }, 1500);
         } else {
           throw new Error("No token found in redirect URL");
         }
@@ -98,16 +113,147 @@ export default function GoogleSignUpModal({
         console.error("Failed to complete authentication:", error);
         setError(error.message || "Authentication failed");
         setAuthResult("error");
-      } finally {
         setIsLoading(false);
       }
     }
+  };
+
+  const handleCountrySelect = (country) => {
+    setSelectedCountry(country);
+  };
+
+  const handleCountrySubmit = async () => {
+    if (!selectedCountry || !token) {
+      setError("Please select a country to continue");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Update user with country code
+      await axios.put(
+        "https://q1x8l0qpnb.execute-api.eu-west-3.amazonaws.com/production/api/user/update",
+        {
+          countryCode: selectedCountry.value.toUpperCase(),
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // Fetch updated user data
+      const updatedUserRes = await axios.get(
+        "https://q1x8l0qpnb.execute-api.eu-west-3.amazonaws.com/production/api/user",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const updatedUser = updatedUserRes?.data?.user;
+      const userName = updatedUser?.name;
+      const userID = updatedUser?._id;
+      const userCountryCode = updatedUser?.countryCode;
+
+      if (!userName || !userID) {
+        throw new Error("Incomplete user data received after update");
+      }
+
+      // Complete the login process
+      completeLogin(token, userName, userID, userCountryCode);
+    } catch (error) {
+      console.error("Failed to update country:", error);
+      setError(error.message || "Failed to update country");
+      setAuthResult("error");
+      setIsLoading(false);
+    }
+  };
+
+  const completeLogin = async (token, name, userID, countryCode) => {
+    try {
+      // Store user data
+      const userData = {
+        name,
+        token,
+        loginTime: Date.now(),
+        userID,
+        countryCode,
+      };
+
+      await AsyncStorage.setItem("userData", JSON.stringify(userData));
+      setAuthResult("success");
+
+      // Call success handler if provided
+      if (onSuccess) {
+        onSuccess();
+      }
+
+      // Close modal after a short delay to show the success state
+      setTimeout(() => {
+        onClose();
+        // Navigate to appropriate screen after successful login
+        navigation.replace("Home");
+      }, 1500);
+    } catch (error) {
+      console.error("Failed to save user data:", error);
+      setError(error.message || "Failed to save user data");
+      setAuthResult("error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const renderCountrySelector = () => {
+    return (
+      <View style={styles.countrySelectorContainer}>
+        <Text style={styles.countryTitle}>Select Your Country</Text>
+        <View style={styles.countryList}>
+          {countryOptions.map((country) => (
+            <TouchableOpacity
+              key={country.value}
+              style={[
+                styles.countryOption,
+                selectedCountry?.value === country.value &&
+                  styles.selectedCountry,
+              ]}
+              onPress={() => handleCountrySelect(country)}
+            >
+              <Text
+                style={[
+                  styles.countryText,
+                  selectedCountry?.value === country.value &&
+                    styles.selectedCountryText,
+                ]}
+              >
+                {country.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <TouchableOpacity
+          style={styles.submitCountryButton}
+          onPress={handleCountrySubmit}
+          disabled={!selectedCountry}
+        >
+          <Text style={styles.submitCountryText}>Continue</Text>
+        </TouchableOpacity>
+      </View>
+    );
   };
 
   const renderContent = () => {
     if (showWebView) {
       return (
         <View style={styles.webViewContainer}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => {
+              setShowWebView(false);
+              setIsLoading(false);
+              setError("");
+              onClose();
+            }}
+          >
+            <Ionicons name="close" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+
           <WebView
             ref={webViewRef}
             source={{ uri: googleAuthURL }}
@@ -121,35 +267,19 @@ export default function GoogleSignUpModal({
                 </Text>
               </View>
             )}
-            userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1"
+            userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15.0 Safari/604.1"
             javaScriptEnabled={true}
             domStorageEnabled={true}
-            injectedJavaScript={`
-              window.onerror = function(message, sourcefile, lineno, colno, error) {
-                window.ReactNativeWebView.postMessage(JSON.stringify({type: 'error', message, sourcefile, lineno, colno}));
-              };
-              true;
-            `}
-            onMessage={(event) => {
-              console.log("WebView message:", event.nativeEvent.data);
-            }}
             incognito={true}
             thirdPartyCookiesEnabled={true}
             sharedCookiesEnabled={true}
           />
-          <TouchableOpacity
-            style={styles.webViewCloseButton}
-            onPress={() => {
-              setShowWebView(false);
-              setIsLoading(false);
-              setError("");
-              onClose();
-            }}
-          >
-            <Text style={styles.webViewCloseButtonText}>Cancel</Text>
-          </TouchableOpacity>
         </View>
       );
+    }
+
+    if (showCountrySelector) {
+      return renderCountrySelector();
     }
 
     if (isLoading) {
@@ -214,6 +344,7 @@ export default function GoogleSignUpModal({
           style={[
             styles.modalContent,
             showWebView && styles.webViewModalContent,
+            showCountrySelector && styles.countrySelectorModalContent,
           ]}
         >
           {renderContent()}
@@ -223,7 +354,6 @@ export default function GoogleSignUpModal({
   );
 }
 
-// Styles remain the same as in your original code
 const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
@@ -244,6 +374,11 @@ const styles = StyleSheet.create({
     padding: 0,
     overflow: "hidden",
   },
+  countrySelectorModalContent: {
+    width: "90%",
+    maxHeight: "80%",
+    padding: 20,
+  },
   webViewContainer: {
     flex: 1,
     width: "100%",
@@ -251,18 +386,17 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: "hidden",
   },
-  webViewCloseButton: {
+  closeButton: {
     position: "absolute",
-    bottom: 20,
-    alignSelf: "center",
-    backgroundColor: "#EF7F1A",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  webViewCloseButtonText: {
-    color: "#121212",
-    fontWeight: "bold",
+    top: 10,
+    right: 10,
+    zIndex: 10,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingOverlay: {
     position: "absolute",
@@ -273,49 +407,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(30, 30, 30, 0.9)",
-  },
-  title: {
-    fontSize: 20,
-    color: "#FFF",
-    marginBottom: 10,
-  },
-  description: {
-    color: "#FFF",
-    marginBottom: 20,
-    textAlign: "center",
-    fontSize: 14,
-  },
-  googleButton: {
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    width: "100%",
-    justifyContent: "center",
-    marginBottom: 20,
-  },
-  googleIcon: {
-    width: 24,
-    height: 24,
-    marginRight: 12,
-    resizeMode: "contain",
-  },
-  googleButtonText: {
-    color: "#333333",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  closeButton: {
-    backgroundColor: "#EF7F1A",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginTop: 20,
-  },
-  closeButtonText: {
-    color: "#121212",
-    fontWeight: "bold",
   },
   loadingContainer: {
     padding: 20,
@@ -356,6 +447,53 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     color: "#121212",
+    fontWeight: "bold",
+  },
+  // Country selector styles
+  countrySelectorContainer: {
+    width: "100%",
+    alignItems: "center",
+  },
+  countryTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  countryList: {
+    width: "100%",
+    maxHeight: 300,
+  },
+  countryOption: {
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 8,
+    backgroundColor: "#2D2D2D",
+  },
+  selectedCountry: {
+    backgroundColor: "#EF7F1A",
+  },
+  countryText: {
+    fontSize: 16,
+    color: "#FFFFFF",
+  },
+  selectedCountryText: {
+    color: "#121212",
+    fontWeight: "bold",
+  },
+  submitCountryButton: {
+    backgroundColor: "#EF7F1A",
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 20,
+    marginTop: 20,
+    width: "80%",
+    alignItems: "center",
+  },
+  submitCountryText: {
+    color: "#121212",
+    fontSize: 16,
     fontWeight: "bold",
   },
 });

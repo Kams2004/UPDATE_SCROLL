@@ -213,7 +213,7 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = () => {
     Keyboard.dismiss();
-    setShowGoogleAuth(true); 
+    setShowGoogleAuth(true);
   };
 
   const handleGoogleAuthSuccess = () => {
