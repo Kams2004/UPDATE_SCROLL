@@ -23,7 +23,7 @@ import { useTranslation } from "react-i18next";
 import ApiService from "../../Services/ApiService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MessageModal from "../MessageModal/MessageModal";
-import { GoogleSignUpModal } from "./GoogleAuthWebView";
+import GoogleSignUpModal from "./GoogleSignUpModal";
 import countries from "../../../constants/countriesList";
 
 const { width, height } = Dimensions.get("window");

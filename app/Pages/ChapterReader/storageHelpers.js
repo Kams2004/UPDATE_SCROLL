@@ -1,5 +1,5 @@
 // storageHelpers.js
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from "expo-file-system";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import JSZip from "jszip";
@@ -66,7 +66,9 @@ export const extractImagesFromCBZ = async (cbzUri, chapterId) => {
 
     // Load with JSZip
     const zip = new JSZip();
-    const arrayBuffer = Uint8Array.from(Buffer.from(base64Data, "base64")).buffer;
+    const arrayBuffer = Uint8Array.from(
+      Buffer.from(base64Data, "base64")
+    ).buffer;
     await zip.loadAsync(arrayBuffer);
 
     // Filter and sort image files
@@ -91,7 +93,9 @@ export const extractImagesFromCBZ = async (cbzUri, chapterId) => {
     for (let i = 0; i < imageFiles.length; i++) {
       const file = imageFiles[i];
       const fileData = await file.async("uint8array");
-      const fileName = `page_${String(i).padStart(3, "0")}.${file.name.split(".").pop()}`;
+      const fileName = `page_${String(i).padStart(3, "0")}.${file.name
+        .split(".")
+        .pop()}`;
       const filePath = `${extractDir}${fileName}`;
 
       await FileSystem.writeAsStringAsync(

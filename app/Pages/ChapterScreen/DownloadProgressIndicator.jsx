@@ -20,7 +20,7 @@ const DownloadProgressIndicator = ({
   const [isDownloading, setIsDownloading] = useState(false);
   const downloadResumable = useRef(null);
 
-  const downloadChapter = async () => {
+  const  downloadChapter = async () => {
     try {
       setIsDownloading(true);
       setProgress(0);
