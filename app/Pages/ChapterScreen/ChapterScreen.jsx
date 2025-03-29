@@ -1005,12 +1005,22 @@ const ChapterScreen = () => {
           return;
         }
 
-        // Get current language
+        // Get current language - use selectedLanguage from state
         const languageToUse = selectedLanguage || i18n.language || "en";
-
         console.log(
           `Downloading chapter ${chapterId} in language: ${languageToUse}`
         );
+
+        // Get chapter content URL from API service
+        const chapterContent = await ApiService.getChapterContent(
+          chapterId,
+          languageToUse,
+          token
+        );
+
+        if (!chapterContent?.signedUrl) {
+          throw new Error("No download URL available for this chapter");
+        }
 
         // Get user-specific paths
         const getUserSpecificPath = async () => {
@@ -1062,46 +1072,9 @@ const ChapterScreen = () => {
         const cbzPath = await getCBZPath(chapterId, languageToUse);
         const extractDir = await getExtractPath(chapterId, languageToUse);
 
-        // Download the chapter
-        const downloadUrl = `https://q1x8l0qpnb.execute-api.eu-west-3.amazonaws.com/production/api/chapter/${chapterId}/${languageToUse}`;
-
-        // First make a HEAD request to check content type
-        const headResponse = await fetch(downloadUrl, {
-          method: "HEAD",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        // Verify server response
-        if (!headResponse.ok) {
-          const errorStatus = headResponse.status;
-          if (errorStatus === 401) {
-            throw new Error("Authentication required. Please log in again.");
-          } else if (errorStatus === 404) {
-            throw new Error(
-              `Chapter not available in ${languageToUse} language.`
-            );
-          } else {
-            throw new Error(`Server error: ${errorStatus}`);
-          }
-        }
-
-        // Check if server is returning JSON (error) instead of CBZ
-        const contentType = headResponse.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-          const fullResponse = await fetch(downloadUrl, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          const errorData = await fullResponse.json();
-          throw new Error(errorData.message || "Server returned JSON error");
-        }
-
         // Create and start download
         const downloadResumable = FileSystem.createDownloadResumable(
-          downloadUrl,
+          chapterContent.signedUrl, // Use the signed URL from API
           cbzPath,
           {
             headers: {
