@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet,Dimensions } from "react-native";
 
 const styles = StyleSheet.create({
   container: {
@@ -30,17 +30,26 @@ const styles = StyleSheet.create({
   disabledButton: {
     opacity: 0.6,
   },
+  progressContainer: {
+    position: 'relative',
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   downloadProgressContainer: {
     justifyContent: 'center',
     alignItems: 'center',
     width: 40,
     height: 40,
   },
-  progressCircleTouchable: {
+  progressCircle: {
     width: 40,
     height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
   },
   downloaddownloadSpinner: {
     flexDirection: "row",
@@ -48,28 +57,47 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  progressCircle: {
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
+
   progressCircleIndicator: {
     position: 'absolute',
-    transform: [{ rotate: '-90deg' }],
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderLeftColor: 'transparent',
+    borderBottomColor: 'transparent',
   },
-  progressCircleBackground: {
+  progressCircleCenter: {
     position: 'absolute',
     width: 30,
     height: 30,
     borderRadius: 15,
+    backgroundColor: '#2B1409',
+  },
+  progressCircleFill: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 2,
-    borderColor: 'rgba(239, 127, 26, 0.3)',
+    borderColor: '#EF7F1A',
+    borderLeftColor: 'transparent',
+    borderBottomColor: 'transparent',
+    transform: [{ rotate: '0deg' }],
+  },
+  progressCircleBackground: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#ccc',
   },
   progressText: {
-    color: '#fff',
+    position: 'absolute',
+    color: '#EF7F1A',
     fontSize: 10,
+    fontWeight: 'bold',
   },
   pauseImage: {
     width: 20,
@@ -80,28 +108,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: 12,
-    height: 12,
   },
   playTriangle: {
     width: 0,
     height: 0,
     backgroundColor: 'transparent',
     borderStyle: 'solid',
-    borderLeftWidth: 8,
+    borderLeftWidth: 10,
     borderRightWidth: 0,
-    borderBottomWidth: 5,
-    borderTopWidth: 5,
+    borderBottomWidth: 6,
+    borderTopWidth: 6,
     borderLeftColor: '#EF7F1A',
     borderRightColor: 'transparent',
     borderBottomColor: 'transparent',
     borderTopColor: 'transparent',
+    transform: [{ translateX: 2 }],
   },
   playIcon: {
+    position: 'absolute',
     width: 12,
     height: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 2,
   },
   pauseBar: {
     width: 3,
@@ -109,11 +137,86 @@ const styles = StyleSheet.create({
     backgroundColor: '#EF7F1A',
   },
   downloadIcon: {
-    width: 20,
-    height: 20,
-    marginRight: 5,
+    width: 28,
+    height: 24,
+    marginRight: 3,
+    marginLeft: 3,
     tintColor: "#FFFFFF",
+    resizeMode: "contain",
   },
+
+
+  readerContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  readerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+  },
+  readerTitle: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  closeReaderButton: {
+    padding: 5,
+  },
+  closeReaderButtonText: {
+    color: '#FFF',
+    fontSize: 24,
+  },
+  readerContent: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  readerImage: {
+    width: '100%',
+    height: Dimensions.get('window').height - 150,
+  },
+  readerControls: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 15,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+  },
+  readerControlButton: {
+    padding: 10,
+    backgroundColor: '#EF7F1A',
+    borderRadius: 5,
+  },
+  disabledControlButton: {
+    opacity: 0.5,
+  },
+  readerControlText: {
+    color: '#FFF',
+    fontSize: 16,
+  },
+  extractionProgressContainer: {
+    padding: 15,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+  },
+  extractionProgressText: {
+    color: '#FFF',
+    textAlign: 'center',
+    marginBottom: 5,
+  },
+  extractionProgressBar: {
+    height: 5,
+    backgroundColor: '#333',
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+  extractionProgressFill: {
+    height: '100%',
+    backgroundColor: '#EF7F1A',
+  },
+
+
+
   downloadButtonText: {
     color: "#FFFFFF",
     fontSize: 14,
